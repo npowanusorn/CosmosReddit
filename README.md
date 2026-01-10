@@ -1,1 +1,1 @@
-"# CosmosReddit" 
+# CosmosReddit
