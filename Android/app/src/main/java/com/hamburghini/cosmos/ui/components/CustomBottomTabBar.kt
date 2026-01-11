@@ -33,7 +33,8 @@ fun CustomBottomTabBar(
         ) {
             destinations.forEach { destination ->
                 TabBarItem(
-                    icon = destination.icon,
+                    filledIconRes = destination.filledIconRes,
+                    outlineIconRes = destination.outlineIconRes,
                     isSelected = currentDestination == destination.route,
                     onClick = { onNavigate(destination) },
                     modifier = Modifier.weight(1f),

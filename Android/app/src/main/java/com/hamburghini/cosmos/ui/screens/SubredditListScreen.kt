@@ -3,6 +3,7 @@ package com.hamburghini.cosmos.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -30,8 +33,13 @@ fun SubredditListScreen() {
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+                .fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 8.dp,
+                bottom = 16.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
@@ -122,4 +130,13 @@ private fun CommunityCard(
             )
         }
     }
+}
+
+@Preview(
+    name = "SubredditListScreen",
+    device = Devices.PHONE
+)
+@Composable
+fun PreviewSubredditListScreen() {
+    SubredditListScreen()
 }

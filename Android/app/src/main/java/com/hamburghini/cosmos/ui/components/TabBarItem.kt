@@ -1,5 +1,6 @@
 package com.hamburghini.cosmos.ui.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -28,13 +29,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun TabBarItem(
-    icon: ImageVector,
+    @DrawableRes filledIconRes: Int,
+    @DrawableRes outlineIconRes: Int,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -94,8 +97,9 @@ fun TabBarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        val iconRes = if (isSelected) filledIconRes else outlineIconRes
         Icon(
-            imageVector = icon,
+            painter = painterResource(iconRes),
             contentDescription = null,
             tint = iconColor,
             modifier = Modifier
