@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material3.Button
@@ -196,7 +197,7 @@ private fun NotLoggedInHeader(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
-                    imageVector = Icons.Default.Login,
+                    imageVector = Icons.AutoMirrored.Filled.Login,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )

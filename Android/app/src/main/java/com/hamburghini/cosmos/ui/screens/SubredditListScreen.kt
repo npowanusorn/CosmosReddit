@@ -85,23 +85,6 @@ fun SubredditListScreen(
         }
     }
 
-    // Load more when reaching the end
-    LaunchedEffect(listState) {
-        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-        val totalItems = listState.layoutInfo.totalItemsCount
-
-        if (lastVisibleIndex != null && lastVisibleIndex >= totalItems - 3) {
-            if (authState is AuthState.LoggedIn &&
-                !uiState.isLoadingMoreMy &&
-                uiState.hasMoreMy &&
-                lastVisibleIndex < mySubreddits.size + 5) { // Check if we're in the my subreddits section
-                viewModel.loadMoreMySubreddits()
-            } else if (!uiState.isLoadingMorePopular && uiState.hasMorePopular) {
-                viewModel.loadMorePopularSubreddits()
-            }
-        }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
             isRefreshing = uiState.isLoadingMy || uiState.isLoadingPopular,
@@ -135,7 +118,7 @@ fun SubredditListScreen(
                             showLoadAll = uiState.hasMoreMy,
                             isLoading = uiState.isLoadingMy,
                             onLoadAllClick = {
-                                viewModel.loadMySubreddits(forceRefresh = true, loadAll = true)
+                                viewModel.loadMySubscriptions(true)
                             }
                         )
                     }
@@ -145,7 +128,7 @@ fun SubredditListScreen(
                         item {
                             ErrorCard(
                                 error = uiState.errorMy ?: "",
-                                onRetry = { viewModel.loadMySubreddits(forceRefresh = true) },
+                                onRetry = { viewModel.loadMySubscriptions(true) },
                                 onDismiss = { viewModel.clearErrors() }
                             )
                         }

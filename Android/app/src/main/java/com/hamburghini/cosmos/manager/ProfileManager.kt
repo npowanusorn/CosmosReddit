@@ -27,9 +27,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.content.edit
 
+/**
+ * Enhanced ProfileManager with subscription cache integration
+ * Handles cache cleanup on account changes
+ */
 @Singleton
 class ProfileManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val subscriptionCacheManager: SubscriptionCacheManager
 ) {
     companion object {
         private const val PREFS_NAME = "reddit_profile_prefs"
@@ -42,7 +47,6 @@ class ProfileManager @Inject constructor(
     private val gson = Gson()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // Lazy-initialized to avoid circular dependency
     private lateinit var authManager: RedditAuthManager
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.NotLoggedIn)
@@ -56,23 +60,14 @@ class ProfileManager @Inject constructor(
         loadLastAuthState()
     }
 
-    /**
-     * Initialize with AuthManager (called after dependency injection)
-     */
     fun setAuthManager(authManager: RedditAuthManager) {
         this.authManager = authManager
     }
 
-    /**
-     * Check if user is currently logged in
-     */
     fun isLoggedIn(): Boolean {
         return _authState.value is AuthState.LoggedIn
     }
 
-    /**
-     * Get current active account if logged in
-     */
     fun getCurrentAccount(): RedditAccount? {
         return when (val state = _authState.value) {
             is AuthState.LoggedIn -> state.account
@@ -80,9 +75,6 @@ class ProfileManager @Inject constructor(
         }
     }
 
-    /**
-     * Get current user info if logged in
-     */
     fun getCurrentUserInfo(): UserInfo? {
         return when (val state = _authState.value) {
             is AuthState.LoggedIn -> state.userInfo
@@ -90,35 +82,22 @@ class ProfileManager @Inject constructor(
         }
     }
 
-    /**
-     * Get username for display (returns "Anonymous" if not logged in)
-     */
     fun getDisplayUsername(): String {
         return getCurrentAccount()?.username ?: "Anonymous"
     }
 
-    /**
-     * Get user avatar URL if available
-     */
     fun getUserAvatarUrl(): String? {
         return getCurrentUserInfo()?.iconImg?.takeIf { it.isNotBlank() }
     }
 
-    /**
-     * Check if user can access authenticated features
-     */
     fun canAccessAuthenticatedFeatures(): Boolean {
         return isLoggedIn() && getCurrentAccount()?.accessToken?.isNotBlank() == true
     }
 
-    /**
-     * Start login process using OAuth
-     */
     fun startLogin(activity: Activity? = null) {
         _authState.value = AuthState.LoggingIn
         saveAuthState()
 
-        // Start OAuth flow using RedditAuthManager
         if (::authManager.isInitialized) {
             if (activity != null) {
                 authManager.startOAuthFlow(activity)
@@ -130,20 +109,11 @@ class ProfileManager @Inject constructor(
         }
     }
 
-    /**
-     * Complete login with account and user info (called by OAuth callback)
-     */
     suspend fun completeLogin(account: RedditAccount, userInfo: UserInfo) {
         try {
-            // Update account as active
             val updatedAccount = account.copy(isActive = true)
-
-            // Update stored accounts
             updateStoredAccount(updatedAccount)
-
-            // Set auth state to logged in
             _authState.value = AuthState.LoggedIn(updatedAccount, userInfo)
-
             saveAuthState()
         } catch (e: Exception) {
             _authState.value = AuthState.AuthError("Failed to complete login: ${e.message}")
@@ -151,34 +121,32 @@ class ProfileManager @Inject constructor(
         }
     }
 
-    /**
-     * Handle login failure
-     */
     fun handleLoginError(error: String, canRetry: Boolean = true) {
         _authState.value = AuthState.AuthError(error, canRetry)
         saveAuthState()
     }
 
     /**
-     * Logout current user
+     * Logout current user and optionally clear their cache
      */
-    fun logout() {
-        // Mark current account as inactive
+    fun logout(clearCache: Boolean = false) {
         getCurrentAccount()?.let { account ->
             val inactiveAccount = account.copy(isActive = false)
             updateStoredAccount(inactiveAccount)
+
+            // Clear cache for this user if requested
+            if (clearCache) {
+                scope.launch {
+                    subscriptionCacheManager.clearCache(account.username)
+                }
+            }
         }
 
         _authState.value = AuthState.NotLoggedIn
-
-        // Clear active account preference
         prefs.edit { remove(KEY_ACTIVE_ACCOUNT_USERNAME) }
         saveAuthState()
     }
 
-    /**
-     * Switch to a different stored account
-     */
     suspend fun switchAccount(account: RedditAccount) {
         if (account.accessToken.isBlank()) {
             handleLoginError("Account has invalid access token")
@@ -189,7 +157,6 @@ class ProfileManager @Inject constructor(
             _authState.value = AuthState.LoggingIn
             saveAuthState()
 
-            // Try to refresh the token first
             if (::authManager.isInitialized && account.refreshToken.isNotBlank()) {
                 when (val result = authManager.refreshAccessToken(account.refreshToken)) {
                     is RedditAuthManager.AuthResult.Success -> {
@@ -208,32 +175,32 @@ class ProfileManager @Inject constructor(
     }
 
     /**
-     * Remove an account from stored accounts
+     * Remove an account and clear its cache
      */
-    fun removeAccount(account: RedditAccount) {
+    fun removeAccount(account: RedditAccount, clearCache: Boolean = true) {
         val currentAccounts = _storedAccounts.value.toMutableList()
         currentAccounts.removeAll { it.username == account.username }
 
         _storedAccounts.value = currentAccounts
         saveStoredAccounts()
 
-        // If this was the active account, logout
+        // Clear cache for removed account
+        if (clearCache) {
+            scope.launch {
+                subscriptionCacheManager.clearCache(account.username)
+            }
+        }
+
         if (getCurrentAccount()?.username == account.username) {
-            logout()
+            logout(clearCache = false) // Already cleared above
         }
     }
 
-    /**
-     * Get authenticated API service for current user
-     */
     fun getAuthenticatedApiService(): RedditApiService? {
         val account = getCurrentAccount() ?: return null
         return createAuthenticatedApiService(account.accessToken)
     }
 
-    /**
-     * Refresh current user's access token if possible
-     */
     suspend fun refreshCurrentToken(): Boolean {
         val account = getCurrentAccount() ?: return false
         if (account.refreshToken.isBlank() || !::authManager.isInitialized) return false
@@ -255,40 +222,31 @@ class ProfileManager @Inject constructor(
         }
     }
 
-    /**
-     * Try to restore previous session on app start
-     */
     fun tryRestorePreviousSession() {
         val activeUsername = prefs.getString(KEY_ACTIVE_ACCOUNT_USERNAME, null)
         if (activeUsername != null) {
             val account = _storedAccounts.value.find { it.username == activeUsername }
             if (account != null && account.refreshToken.isNotBlank()) {
-                // Set to LoggingIn state first
                 _authState.value = AuthState.LoggingIn
 
-                // Try to refresh the token in background
                 scope.launch {
                     when (val result = authManager.refreshAccessToken(account.refreshToken)) {
                         is RedditAuthManager.AuthResult.Success -> {
                             completeLogin(result.account, result.userInfo)
                         }
                         is RedditAuthManager.AuthResult.Error -> {
-                            // Session restore failed - stay logged out
                             _authState.value = AuthState.NotLoggedIn
                         }
                     }
                 }
             } else {
-                // No valid account to restore
                 _authState.value = AuthState.NotLoggedIn
             }
         } else {
-            // No previous session to restore
             _authState.value = AuthState.NotLoggedIn
         }
     }
 
-    // Private helper methods
     private fun loadStoredAccounts() {
         val accountsJson = prefs.getString(KEY_ACCOUNTS, null)
         if (accountsJson != null) {
@@ -309,28 +267,21 @@ class ProfileManager @Inject constructor(
 
     private fun updateStoredAccount(account: RedditAccount) {
         val currentAccounts = _storedAccounts.value.toMutableList()
-
-        // Remove existing account with same username
         currentAccounts.removeAll { it.username == account.username }
-
-        // Add updated account
         currentAccounts.add(account)
 
         _storedAccounts.value = currentAccounts
         saveStoredAccounts()
 
-        // Update active account preference
         if (account.isActive) {
             prefs.edit().putString(KEY_ACTIVE_ACCOUNT_USERNAME, account.username).apply()
         }
     }
 
     private fun loadLastAuthState() {
-        // Start with LoggingIn state if there's a stored account, NotLoggedIn otherwise
-        // This prevents HomeViewModel from loading public feed prematurely
         val activeUsername = prefs.getString(KEY_ACTIVE_ACCOUNT_USERNAME, null)
         _authState.value = if (activeUsername != null && _storedAccounts.value.any { it.username == activeUsername }) {
-            AuthState.LoggingIn  // Will be resolved by tryRestorePreviousSession
+            AuthState.LoggingIn
         } else {
             AuthState.NotLoggedIn
         }

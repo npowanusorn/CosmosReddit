@@ -3,6 +3,7 @@ package com.hamburghini.cosmos.di
 import android.content.Context
 import com.hamburghini.cosmos.auth.RedditAuthManager
 import com.hamburghini.cosmos.manager.ProfileManager
+import com.hamburghini.cosmos.manager.SubscriptionCacheManager
 import com.hamburghini.cosmos.repository.RedditRepository
 import dagger.Module
 import dagger.Provides
@@ -17,14 +18,20 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideRedditRepository(profileManager: ProfileManager): RedditRepository {
-        return RedditRepository(profileManager)
+    fun provideRedditRepository(
+        profileManager: ProfileManager,
+        subscriptionCacheManager: SubscriptionCacheManager
+    ): RedditRepository {
+        return RedditRepository(profileManager, subscriptionCacheManager)
     }
 
     @Provides
     @Singleton
-    fun provideProfileManager(@ApplicationContext context: Context): ProfileManager {
-        return ProfileManager(context)
+    fun provideProfileManager(
+        @ApplicationContext context: Context,
+        subscriptionCacheManager: SubscriptionCacheManager
+    ): ProfileManager {
+        return ProfileManager(context, subscriptionCacheManager)
     }
 
     @Provides
@@ -37,5 +44,13 @@ object AppModule {
         // Set the auth manager in profile manager to avoid circular dependency
         profileManager.setAuthManager(authManager)
         return authManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideSubscriptionCacheManager(
+        @ApplicationContext context: Context
+    ): SubscriptionCacheManager {
+        return SubscriptionCacheManager(context)
     }
 }
