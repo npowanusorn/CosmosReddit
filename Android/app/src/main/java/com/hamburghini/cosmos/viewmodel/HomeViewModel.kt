@@ -2,18 +2,22 @@ package com.hamburghini.cosmos.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hamburghini.cosmos.manager.ProfileManager
+import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.repository.RedditRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: RedditRepository
+    private val repository: RedditRepository,
+    private val profileManager: ProfileManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -25,16 +29,120 @@ class HomeViewModel @Inject constructor(
     private var currentAfter: String? = null
 
     init {
+        // Observe authentication state changes and reload posts accordingly
+        viewModelScope.launch {
+            profileManager.authState.collect { authState ->
+                when (authState) {
+                    is AuthState.LoggedIn -> {
+                        // User just logged in - load personalized feed
+                        loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                    }
+                    is AuthState.NotLoggedIn -> {
+                        // User logged out - load public feed
+                        loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                    }
+                    else -> {
+                        // LoggingIn or AuthError states - don't reload
+                    }
+                }
+            }
+        }
+
+        // Initial load
         loadPosts()
     }
 
-    fun loadPosts(sortType: SortType = SortType.HOT) {
+    fun loadPosts(sortType: SortType = SortType.HOT, forceRefresh: Boolean = false) {
+        // Don't reload if we're already loading the same sort type, unless forced
+        if (!forceRefresh &&
+            _uiState.value.isLoading &&
+            _uiState.value.currentSortType == sortType) {
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            currentAfter = null
 
             try {
+                val isLoggedIn = profileManager.isLoggedIn()
+                val response = if (isLoggedIn) {
+                    // Load user's personalized feed
+                    when (sortType) {
+                        SortType.HOT -> repository.getMyHotPosts()
+                        SortType.BEST -> repository.getMyBestPosts()
+                        SortType.NEW -> repository.getMyNewPosts()
+                        SortType.TOP -> repository.getMyTopPosts(timeframe = "day")
+                        SortType.RISING -> repository.getHotPosts("all") // Fallback to public for rising
+                    }
+                } else {
+                    // Load public feed
+                    when (sortType) {
+                        SortType.HOT -> repository.getHotPosts("all")
+                        SortType.BEST -> repository.getHotPosts("all") // Fallback to hot for public
+                        SortType.NEW -> repository.getNewPosts("all")
+                        SortType.TOP -> repository.getTopPosts("all", "day")
+                        SortType.RISING -> repository.getRisingPosts("all")
+                    }
+                }
+
+                if (response.isSuccessful) {
+                    val listing = response.body()
+                    if (listing != null) {
+                        val newPosts = listing.data.children.map { it.data }
+                        _posts.value = newPosts
+                        currentAfter = listing.data.after
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            currentSortType = sortType,
+                            hasMore = listing.data.after != null,
+                            isPersonalized = isLoggedIn && sortType != SortType.RISING
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = "No data received"
+                        )
+                    }
+                } else {
+                    val errorMessage = when (response.code()) {
+                        401 -> "Session expired - please log in again"
+                        403 -> "Access denied - check permissions"
+                        429 -> "Too many requests - please wait"
+                        500, 502, 503 -> "Reddit server error - try again later"
+                        else -> "Failed to load posts (${response.code()})"
+                    }
+
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = errorMessage
+                    )
+                }
+            } catch (e: IllegalStateException) {
+                // User not logged in for authenticated endpoint
+                if (e.message?.contains("not logged in") == true) {
+                    // Fallback to public feed
+                    loadPublicPosts(sortType)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Error: ${e.message}"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Error loading posts: ${e.message}"
+                )
+            }
+        }
+    }
+
+    private fun loadPublicPosts(sortType: SortType) {
+        viewModelScope.launch {
+            try {
                 val response = when (sortType) {
-                    SortType.HOT -> repository.getHotPosts("all")
+                    SortType.HOT, SortType.BEST -> repository.getHotPosts("all")
                     SortType.NEW -> repository.getNewPosts("all")
                     SortType.TOP -> repository.getTopPosts("all", "day")
                     SortType.RISING -> repository.getRisingPosts("all")
@@ -49,7 +157,8 @@ class HomeViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             currentSortType = sortType,
-                            hasMore = listing.data.after != null
+                            hasMore = listing.data.after != null,
+                            isPersonalized = false
                         )
                     }
                 } else {
@@ -74,11 +183,24 @@ class HomeViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoadingMore = true)
 
             try {
-                val response = when (_uiState.value.currentSortType) {
-                    SortType.HOT -> repository.getHotPosts("all", currentAfter)
-                    SortType.NEW -> repository.getNewPosts("all", currentAfter)
-                    SortType.TOP -> repository.getTopPosts("all", "day", currentAfter)
-                    SortType.RISING -> repository.getRisingPosts("all", currentAfter)
+                val isLoggedIn = profileManager.isLoggedIn()
+                val response = if (isLoggedIn && _uiState.value.isPersonalized) {
+                    // Load more from user's personalized feed
+                    when (_uiState.value.currentSortType) {
+                        SortType.HOT -> repository.getMyHotPosts(currentAfter)
+                        SortType.BEST -> repository.getMyBestPosts(currentAfter)
+                        SortType.NEW -> repository.getMyNewPosts(currentAfter)
+                        SortType.TOP -> repository.getMyTopPosts(currentAfter, timeframe = "day")
+                        SortType.RISING -> repository.getHotPosts("all", currentAfter)
+                    }
+                } else {
+                    // Load more from public feed
+                    when (_uiState.value.currentSortType) {
+                        SortType.HOT, SortType.BEST -> repository.getHotPosts("all", currentAfter)
+                        SortType.NEW -> repository.getNewPosts("all", currentAfter)
+                        SortType.TOP -> repository.getTopPosts("all", "day", currentAfter)
+                        SortType.RISING -> repository.getRisingPosts("all", currentAfter)
+                    }
                 }
 
                 if (response.isSuccessful) {
@@ -109,11 +231,72 @@ class HomeViewModel @Inject constructor(
 
     fun refreshPosts() {
         currentAfter = null
-        loadPosts(_uiState.value.currentSortType)
+        loadPosts(_uiState.value.currentSortType, forceRefresh = true)
     }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun voteOnPost(postId: String, direction: Int) {
+        if (!profileManager.isLoggedIn()) {
+            _uiState.value = _uiState.value.copy(error = "Please log in to vote")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = repository.vote(postId, direction)
+                if (!response.isSuccessful) {
+                    _uiState.value = _uiState.value.copy(
+                        error = "Failed to vote: ${response.code()}"
+                    )
+                }
+                // If successful, the post score will be updated in the UI layer
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Error voting: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun savePost(postId: String, save: Boolean) {
+        if (!profileManager.isLoggedIn()) {
+            _uiState.value = _uiState.value.copy(error = "Please log in to save posts")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = if (save) {
+                    repository.savePost(postId)
+                } else {
+                    repository.unsavePost(postId)
+                }
+
+                if (!response.isSuccessful) {
+                    val action = if (save) "save" else "unsave"
+                    _uiState.value = _uiState.value.copy(
+                        error = "Failed to $action post: ${response.code()}"
+                    )
+                }
+                // If successful, the post saved state will be updated in the UI layer
+            } catch (e: Exception) {
+                val action = if (save) "save" else "unsave"
+                _uiState.value = _uiState.value.copy(
+                    error = "Error ${action}ing post: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun getCurrentUsername(): String {
+        return profileManager.getDisplayUsername()
+    }
+
+    fun isLoggedIn(): Boolean {
+        return profileManager.isLoggedIn()
     }
 }
 
@@ -122,9 +305,10 @@ data class HomeUiState(
     val isLoadingMore: Boolean = false,
     val error: String? = null,
     val currentSortType: SortType = SortType.HOT,
-    val hasMore: Boolean = false
+    val hasMore: Boolean = false,
+    val isPersonalized: Boolean = false // Whether showing user's personalized feed
 )
 
 enum class SortType {
-    HOT, NEW, TOP, RISING
+    HOT, BEST, NEW, TOP, RISING
 }

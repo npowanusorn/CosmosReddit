@@ -71,6 +71,10 @@ dependencies {
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
+    implementation("androidx.browser:browser:1.10.0-alpha02")
+    implementation("androidx.webkit:webkit:1.15.0")
+    implementation("androidx.security:security-crypto:1.1.0")
+
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -7,21 +7,27 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.R
+import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.navigation.BottomNavDestination
 import com.hamburghini.cosmos.ui.components.CustomBottomTabBar
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
+import com.hamburghini.cosmos.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     var currentTab by remember { mutableStateOf(BottomNavDestination.HOME) }
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val authState by profileViewModel.authState.collectAsState()
 
     val bottomNavDestinations = listOf(
         BottomNavDestination.HOME,
@@ -50,7 +56,12 @@ fun MainScreen() {
                     println("onSearchClick")
                 },
                 onNotificationClick = {
-                    println("onNotificationClick")
+                    if (authState is AuthState.LoggedIn) {
+                        println("onNotificationClick for user: ${(authState as AuthState.LoggedIn).account.username}")
+                    } else {
+                        println("Notifications require login")
+                        // Could show a login prompt here
+                    }
                 },
             )
         },
@@ -71,9 +82,9 @@ fun MainScreen() {
         ) {
             when (currentTab) {
                 BottomNavDestination.HOME -> HomeScreen()
-                BottomNavDestination.SUBREDDITS_LIST -> SubredditListScreen()
-                BottomNavDestination.CHAT -> ChatScreen()
-                BottomNavDestination.PROFILE -> ProfileScreen()
+                BottomNavDestination.SUBREDDITS_LIST -> SubredditListScreen(profileViewModel)
+                BottomNavDestination.CHAT -> ChatScreen(profileViewModel)
+                BottomNavDestination.PROFILE -> ProfileScreen(profileViewModel)
             }
         }
     }

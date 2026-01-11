@@ -20,7 +20,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -69,7 +73,6 @@ fun HomeScreen(
 
     // Load more posts when reaching the end
     LaunchedEffect(listState) {
-        // This effect will trigger when we scroll near the end
         val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
         val totalItems = listState.layoutInfo.totalItemsCount
 
@@ -99,9 +102,19 @@ fun HomeScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Feed type indicator
+                item {
+                    FeedTypeIndicator(
+                        isPersonalized = uiState.isPersonalized,
+                        username = viewModel.getCurrentUsername(),
+                        isLoggedIn = viewModel.isLoggedIn()
+                    )
+                }
+
                 item {
                     SortFilterRow(
                         currentSort = uiState.currentSortType,
+                        isPersonalized = uiState.isPersonalized,
                         onSortChanged = { sortType ->
                             viewModel.loadPosts(sortType)
                         }
@@ -128,8 +141,7 @@ fun HomeScreen(
                                 println("Post clicked: ${clickedPost.title}")
                             },
                             onVote = { postId, direction ->
-                                // TODO: Implement voting
-                                println("Vote: $postId direction: $direction")
+                                viewModel.voteOnPost(postId, direction)
                             }
                         )
                     }
@@ -181,8 +193,67 @@ fun HomeScreen(
 }
 
 @Composable
+private fun FeedTypeIndicator(
+    isPersonalized: Boolean,
+    username: String,
+    isLoggedIn: Boolean
+) {
+    if (isLoggedIn) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isPersonalized)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (isPersonalized) Icons.Default.Person else Icons.Default.Public,
+                    contentDescription = null,
+                    tint = if (isPersonalized)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    text = if (isPersonalized)
+                        "Your personalized feed"
+                    else
+                        "Popular posts",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isPersonalized)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (isPersonalized) {
+                    Text(
+                        text = "• $username",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun SortFilterRow(
     currentSort: SortType,
+    isPersonalized: Boolean,
     onSortChanged: (SortType) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -191,13 +262,21 @@ private fun SortFilterRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        items(SortType.entries) { sortType ->
+        // Show appropriate sorts based on whether it's personalized feed
+        val availableSorts = if (isPersonalized) {
+            listOf(SortType.BEST, SortType.HOT, SortType.NEW, SortType.TOP)
+        } else {
+            SortType.entries
+        }
+
+        items(availableSorts) { sortType ->
             FilterChip(
                 selected = currentSort == sortType,
                 onClick = { onSortChanged(sortType) },
                 label = {
                     Text(
                         text = when (sortType) {
+                            SortType.BEST -> "Best"
                             SortType.HOT -> "Hot"
                             SortType.NEW -> "New"
                             SortType.TOP -> "Top"
@@ -259,30 +338,5 @@ private fun ErrorMessage(
                 Text("Retry")
             }
         }
-    }
-}
-
-@Composable
-private fun EmptyState(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "No posts available",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = "Pull to refresh or try a different sort option",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
     }
 }
