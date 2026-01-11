@@ -3,6 +3,8 @@ package com.hamburghini.cosmos.repository
 import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.model.RedditListingResponse
+import com.hamburghini.cosmos.model.SubredditAbout
+import com.hamburghini.cosmos.model.SubredditAboutData
 import com.hamburghini.cosmos.network.RetrofitClient
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -167,5 +169,57 @@ class RedditRepository @Inject constructor(
     // Helper method to get current username
     fun getCurrentUsername(): String {
         return profileManager.getDisplayUsername()
+    }
+
+    // Subreddit list endpoints
+    suspend fun getMySubscribedSubreddits(
+        after: String? = null,
+        limit: Int = 100
+    ): Response<RedditListingResponse<SubredditAboutData>> {
+        return try {
+            val apiService = profileManager.getAuthenticatedApiService()
+                ?: throw IllegalStateException("User not logged in")
+
+            apiService.getMySubscribedSubreddits(after, limit)
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    suspend fun getPopularSubreddits(
+        after: String? = null,
+        limit: Int = 25
+    ): Response<RedditListingResponse<SubredditAboutData>> {
+        return try {
+            publicApiService.getPopularSubreddits(after, limit)
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    suspend fun subscribeToSubreddit(
+        subredditName: String,
+        action: String // "sub" or "unsub"
+    ): Response<ResponseBody> {
+        return try {
+            val apiService = profileManager.getAuthenticatedApiService()
+                ?: throw IllegalStateException("User not logged in")
+
+            apiService.subscribe(subredditName, action)
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    suspend fun searchSubreddits(
+        query: String,
+        after: String? = null,
+        limit: Int = 25
+    ): Response<RedditListingResponse<SubredditAbout>> {
+        return try {
+            publicApiService.searchSubreddits(query, "relevance", after, limit)
+        } catch (e: Exception) {
+            throw e
+        }
     }
 }
