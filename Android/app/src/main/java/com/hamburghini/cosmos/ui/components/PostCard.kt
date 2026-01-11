@@ -63,12 +63,15 @@ fun PostCard(
 
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .clickable { onPostClick(post) },
+            .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 6.dp
+        ),
+        onClick = { onPostClick(post) }
     ) {
         Column(
             modifier = Modifier
@@ -314,7 +317,7 @@ private fun PostFooter(
     currentScore: Int,
     voteState: Boolean?,
     onUpvote: () -> Unit,
-    onDownvote: () -> Unit
+    onDownvote: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
