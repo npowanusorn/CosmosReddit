@@ -65,10 +65,6 @@ fun SubredditListScreen(
         ) {
             when (authState) {
                 is AuthState.LoggedIn -> {
-                    item {
-                        LoggedInHeader(username = (authState as AuthState.LoggedIn).account.username)
-                    }
-
                     // Show subscribed subreddits section
                     item {
                         Text(
@@ -132,56 +128,6 @@ fun SubredditListScreen(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Join community",
                     tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LoggedInHeader(username: String) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(RedditOrange),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = username.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
-                Text(
-                    text = "Welcome back, u/$username!",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Discover and manage your communities",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

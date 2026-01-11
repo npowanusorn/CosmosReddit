@@ -64,6 +64,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.RedditAccount
+import com.hamburghini.cosmos.model.UserInfo
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.util.AccountUtils
 import com.hamburghini.cosmos.viewmodel.ProfileViewModel
@@ -334,7 +335,7 @@ private fun ErrorBanner(
 @Composable
 private fun CurrentAccountCard(
     account: RedditAccount,
-    userInfo: com.hamburghini.cosmos.model.UserInfo,
+    userInfo: UserInfo,
     onLogoutClick: () -> Unit,
     isLoading: Boolean
 ) {
@@ -461,8 +462,7 @@ private fun AccountListItem(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
-            .alpha(alpha)
-            .clickable(enabled = !isProcessing) { onClick() },
+            .alpha(alpha),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected && isProcessing) {
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
@@ -470,7 +470,9 @@ private fun AccountListItem(
                 MaterialTheme.colorScheme.surfaceVariant
             }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        enabled = !isProcessing,
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -604,42 +606,49 @@ private fun AddAccountButton(
         label = "alphaAnimation"
     )
 
-    Row(
-        modifier = modifier
+    Card(
+        modifier = Modifier
             .fillMaxWidth()
             .alpha(alpha)
-            .clickable(enabled = enabled) { onClick() }
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = 12.dp, horizontal = 20.dp),
+        enabled = enabled,
+        onClick = onClick
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .alpha(alpha),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.PersonAdd,
-                contentDescription = "Add account",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = "Add account",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
 
-        Column {
-            Text(
-                text = "Add Account",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
-            )
+            Column {
+                Text(
+                    text = "Add Account",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
 
-            Text(
-                text = "Log in with another Reddit account",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                Text(
+                    text = "Log in with another Reddit account",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
