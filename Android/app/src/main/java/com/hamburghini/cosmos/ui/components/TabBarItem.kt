@@ -113,7 +113,7 @@ fun TabBarItem(
         // Indicator dot
         Box(
             modifier = Modifier
-                .size(6.dp)
+                .size(4.dp)
                 .scale(dotScale)
                 .background(
                     color = if (isSelected) RedditOrange else Color.Transparent,

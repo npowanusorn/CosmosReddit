@@ -131,7 +131,12 @@ fun SubredditListScreen(
                     item {
                         SectionHeader(
                             title = "My Communities",
-                            count = mySubreddits.size
+                            count = mySubreddits.size,
+                            showLoadAll = uiState.hasMoreMy,
+                            isLoading = uiState.isLoadingMy,
+                            onLoadAllClick = {
+                                viewModel.loadMySubreddits(forceRefresh = true, loadAll = true)
+                            }
                         )
                     }
 
@@ -149,7 +154,14 @@ fun SubredditListScreen(
                     // Show loading for first load
                     if (uiState.isLoadingMy && mySubreddits.isEmpty()) {
                         item {
-                            LoadingCard()
+                            LoadingCard(progressMessage = uiState.loadingProgress)
+                        }
+                    }
+
+                    // Show loading progress while loading all
+                    if (uiState.isLoadingMy && mySubreddits.isNotEmpty() && uiState.loadingProgress != null) {
+                        item {
+                            LoadingProgressCard(progressMessage = uiState.loadingProgress!!)
                         }
                     }
 
@@ -185,59 +197,53 @@ fun SubredditListScreen(
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
-                }
-
-                // Popular Subreddits Section
-                item {
-                    SectionHeader(
-                        title = "Popular Communities",
-                        count = popularSubreddits.size
-                    )
-                }
-
-                // Show error if any
-                if (uiState.errorPopular != null) {
+                } else {
+                    // Popular Subreddits Section
                     item {
-                        ErrorCard(
-                            error = uiState.errorPopular ?: "",
-                            onRetry = { viewModel.loadPopularSubreddits(forceRefresh = true) },
-                            onDismiss = { viewModel.clearErrors() }
+                        SectionHeader(
+                            title = "Popular Communities",
+                            count = popularSubreddits.size
                         )
                     }
-                }
 
-                // Show loading for first load
-                if (uiState.isLoadingPopular && popularSubreddits.isEmpty()) {
-                    item {
-                        LoadingCard()
-                    }
-                }
-
-                // Show popular subreddits
-                items(
-                    items = popularSubreddits,
-                    key = { it.name }
-                ) { subreddit ->
-                    val isSubscribed = if (authState is AuthState.LoggedIn) {
-                        viewModel.isSubscribed(subreddit.name)
-                    } else {
-                        false
-                    }
-
-                    SubredditCard(
-                        subreddit = subreddit,
-                        isSubscribed = isSubscribed,
-                        canInteract = authState is AuthState.LoggedIn,
-                        onSubscribeClick = {
-                            viewModel.subscribeToSubreddit(subreddit.name, !isSubscribed)
+                    // Show error if any
+                    if (uiState.errorPopular != null) {
+                        item {
+                            ErrorCard(
+                                error = uiState.errorPopular ?: "",
+                                onRetry = { viewModel.loadPopularSubreddits(forceRefresh = true) },
+                                onDismiss = { viewModel.clearErrors() }
+                            )
                         }
-                    )
-                }
+                    }
 
-                // Show loading more indicator
-                if (uiState.isLoadingMorePopular) {
-                    item {
-                        LoadingMoreIndicator()
+                    // Show loading for first load
+                    if (uiState.isLoadingPopular && popularSubreddits.isEmpty()) {
+                        item {
+                            LoadingCard()
+                        }
+                    }
+
+                    // Show popular subreddits
+                    items(
+                        items = popularSubreddits,
+                        key = { it.name }
+                    ) { subreddit ->
+                        SubredditCard(
+                            subreddit = subreddit,
+                            isSubscribed = false,
+                            canInteract = false,
+                            onSubscribeClick = {
+                                viewModel.subscribeToSubreddit(subreddit.name, false)
+                            }
+                        )
+                    }
+
+                    // Show loading more indicator
+                    if (uiState.isLoadingMorePopular) {
+                        item {
+                            LoadingMoreIndicator()
+                        }
                     }
                 }
             }
@@ -274,7 +280,10 @@ fun SubredditListScreen(
 @Composable
 private fun SectionHeader(
     title: String,
-    count: Int
+    count: Int,
+    showLoadAll: Boolean = false,
+    isLoading: Boolean = false,
+    onLoadAllClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -283,18 +292,35 @@ private fun SectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-
-        if (count > 0) {
+        Column {
             Text(
-                text = "$count",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
+
+            if (count > 0) {
+                Text(
+                    text = "$count communities",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (showLoadAll && !isLoading) {
+            OutlinedButton(
+                onClick = onLoadAllClick,
+                modifier = Modifier.height(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Load All", style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }
@@ -553,16 +579,60 @@ private fun ErrorCard(
 }
 
 @Composable
-private fun LoadingCard() {
+private fun LoadingCard(progressMessage: String? = null) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(
-            color = RedditOrange
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            CircularProgressIndicator(
+                color = RedditOrange
+            )
+
+            if (progressMessage != null) {
+                Text(
+                    text = progressMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingProgressCard(progressMessage: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularProgressIndicator(
+                color = RedditOrange,
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp
+            )
+
+            Text(
+                text = progressMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
     }
 }
 

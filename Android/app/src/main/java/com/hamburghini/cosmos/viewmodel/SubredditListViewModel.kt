@@ -7,6 +7,7 @@ import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.SubredditAboutData
 import com.hamburghini.cosmos.repository.RedditRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,8 +40,8 @@ class SubredditListViewModel @Inject constructor(
             profileManager.authState.collect { authState ->
                 when (authState) {
                     is AuthState.LoggedIn -> {
-                        // User is logged in - load both my subreddits and popular
-                        loadMySubreddits()
+                        // User is logged in
+                        loadMySubreddits(loadAll = true)
                         loadPopularSubreddits()
                     }
                     is AuthState.NotLoggedIn -> {
@@ -58,7 +59,7 @@ class SubredditListViewModel @Inject constructor(
     /**
      * Load user's subscribed subreddits (requires authentication)
      */
-    fun loadMySubreddits(forceRefresh: Boolean = false) {
+    fun loadMySubreddits(forceRefresh: Boolean = false, loadAll: Boolean = false) {
         if (!forceRefresh && (_uiState.value.isLoadingMy || _mySubreddits.value.isNotEmpty())) {
             return
         }
@@ -67,62 +68,165 @@ class SubredditListViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoadingMy = true, errorMy = null)
             mySubredditsAfter = null
 
-            try {
-                val response = repository.getMySubscribedSubreddits()
+            if (loadAll) {
+                loadAllMySubreddits()
+            } else {
+                loadMySubredditsPage()
+            }
+        }
+    }
+
+    /**
+     * Load a single page of subscribed subreddits
+     */
+    private suspend fun loadMySubredditsPage(after: String? = null) {
+        try {
+            val response = repository.getMySubscribedSubreddits(after)
+
+            if (response.isSuccessful) {
+                val listing = response.body()
+                if (listing != null) {
+                    val subreddits = listing.data.children.map { it.data }
+
+                    if (after == null) {
+                        // First page
+                        _mySubreddits.value = subreddits
+                    } else {
+                        // Subsequent pages
+                        _mySubreddits.value += subreddits
+                    }
+
+                    mySubredditsAfter = listing.data.after
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingMy = false,
+                        hasMoreMy = listing.data.after != null
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingMy = false,
+                        errorMy = "No data received"
+                    )
+                }
+            } else {
+                val errorMessage = when (response.code()) {
+                    401 -> {
+                        // Try to refresh token
+                        if (profileManager.getCurrentAccount()?.refreshToken?.isNotBlank() == true) {
+                            val refreshResult = profileManager.refreshCurrentToken()
+                            if (refreshResult) {
+                                // Retry loading
+                                loadMySubreddits(forceRefresh = true)
+                                return
+                            }
+                        }
+                        "Session expired - please log in again"
+                    }
+                    403 -> "Access denied"
+                    429 -> "Too many requests - please wait"
+                    500, 502, 503 -> "Reddit server error - try again later"
+                    else -> "Failed to load subscriptions (${response.code()})"
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    isLoadingMy = false,
+                    errorMy = errorMessage
+                )
+            }
+        } catch (e: IllegalStateException) {
+            // User not logged in
+            _uiState.value = _uiState.value.copy(
+                isLoadingMy = false,
+                errorMy = "Please log in to view subscriptions"
+            )
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoadingMy = false,
+                errorMy = "Error: ${e.message}"
+            )
+        }
+    }
+
+    /**
+     * Load all subscribed subreddits by continuously paginating until no more results
+     */
+    private suspend fun loadAllMySubreddits() {
+        try {
+            val allSubreddits = mutableListOf<SubredditAboutData>()
+            var currentAfter: String? = null
+            var pageCount = 0
+            val maxPages = 20
+
+            do {
+                val response = repository.getMySubscribedSubreddits(currentAfter, limit = 100)
 
                 if (response.isSuccessful) {
                     val listing = response.body()
                     if (listing != null) {
                         val subreddits = listing.data.children.map { it.data }
-                        _mySubreddits.value = subreddits
-                        mySubredditsAfter = listing.data.after
+                        allSubreddits.addAll(subreddits)
+                        currentAfter = listing.data.after
+                        pageCount++
+
+                        // Update UI with progress
+                        _mySubreddits.value = allSubreddits.toList()
                         _uiState.value = _uiState.value.copy(
-                            isLoadingMy = false,
-                            hasMoreMy = listing.data.after != null
+                            loadingProgress = "Loading... ${allSubreddits.size} communities"
                         )
+
+                        // Add a small delay to avoid rate limiting
+                        if (currentAfter != null) {
+                            delay(300)
+                        }
                     } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoadingMy = false,
-                            errorMy = "No data received"
-                        )
+                        break
                     }
                 } else {
                     val errorMessage = when (response.code()) {
                         401 -> {
-                            // Try to refresh token
                             if (profileManager.getCurrentAccount()?.refreshToken?.isNotBlank() == true) {
                                 val refreshResult = profileManager.refreshCurrentToken()
                                 if (refreshResult) {
-                                    // Retry loading
-                                    loadMySubreddits(forceRefresh = true)
-                                    return@launch
+                                    loadAllMySubreddits()
+                                    return
                                 }
                             }
                             "Session expired - please log in again"
                         }
                         403 -> "Access denied"
-                        429 -> "Too many requests - please wait"
+                        429 -> "Too many requests - please wait and try again"
                         500, 502, 503 -> "Reddit server error - try again later"
-                        else -> "Failed to load subscriptions (${response.code()})"
+                        else -> "Failed to load all subscriptions (${response.code()})"
                     }
 
                     _uiState.value = _uiState.value.copy(
                         isLoadingMy = false,
-                        errorMy = errorMessage
+                        errorMy = errorMessage,
+                        loadingProgress = null
                     )
+                    return
                 }
-            } catch (e: IllegalStateException) {
-                // User not logged in
-                _uiState.value = _uiState.value.copy(
-                    isLoadingMy = false,
-                    errorMy = "Please log in to view subscriptions"
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoadingMy = false,
-                    errorMy = "Error: ${e.message}"
-                )
-            }
+            } while (currentAfter != null && pageCount < maxPages)
+
+            // Final update
+            mySubredditsAfter = null // No more pages to load
+            _uiState.value = _uiState.value.copy(
+                isLoadingMy = false,
+                hasMoreMy = false,
+                loadingProgress = null
+            )
+
+        } catch (e: IllegalStateException) {
+            _uiState.value = _uiState.value.copy(
+                isLoadingMy = false,
+                errorMy = "Please log in to view subscriptions",
+                loadingProgress = null
+            )
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoadingMy = false,
+                errorMy = "Error: ${e.message}",
+                loadingProgress = null
+            )
         }
     }
 
@@ -303,7 +407,7 @@ class SubredditListViewModel @Inject constructor(
      */
     fun refreshAll() {
         if (profileManager.isLoggedIn()) {
-            loadMySubreddits(forceRefresh = true)
+            loadMySubreddits(forceRefresh = true, loadAll = true)
         }
         loadPopularSubreddits(forceRefresh = true)
     }
@@ -331,5 +435,6 @@ data class SubredditListUiState(
     val errorMy: String? = null,
     val errorPopular: String? = null,
     val hasMoreMy: Boolean = false,
-    val hasMorePopular: Boolean = false
+    val hasMorePopular: Boolean = false,
+    val loadingProgress: String? = null
 )
