@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale.getDefault
 import javax.inject.Inject
 
 @HiltViewModel
@@ -82,7 +83,7 @@ class SubredditListViewModel @Inject constructor(
                 if (response.isSuccessful) {
                     val listing = response.body()
                     if (listing != null) {
-                        val subreddits = listing.data.children.map { it.data }
+                        val subreddits = listing.data.children.map { it.data }.sortedBy { it.displayName.lowercase(getDefault()) }
                         _mySubreddits.value = subreddits
 
                         _uiState.value = _uiState.value.copy(
@@ -168,10 +169,13 @@ class SubredditListViewModel @Inject constructor(
                     if (isSubscribe) {
                         val subreddit = _popularSubreddits.value.find { it.name == subredditName }
                         if (subreddit != null) {
-                            _mySubreddits.value = listOf(subreddit.copy(userIsSubscriber = true)) + _mySubreddits.value
+                            val newList = listOf(subreddit.copy(userIsSubscriber = true)) + _mySubreddits.value
+                            _mySubreddits.value = newList.sortedBy { it.displayName.lowercase(getDefault()) }
                         }
                     } else {
-                        _mySubreddits.value = _mySubreddits.value.filter { it.name != subredditName }
+                        _mySubreddits.value = _mySubreddits.value.filter { it.name != subredditName }.sortedBy {
+                            it.displayName.lowercase(getDefault())
+                        }
                     }
 
                     _popularSubreddits.value = _popularSubreddits.value.map { subreddit ->

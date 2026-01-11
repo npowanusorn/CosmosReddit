@@ -62,13 +62,13 @@ import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.SubredditAboutData
 import com.hamburghini.cosmos.ui.theme.RedditOrange
+import com.hamburghini.cosmos.util.Logger
 import com.hamburghini.cosmos.viewmodel.SubredditListViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubredditListScreen(
-    onLoginClick: () -> Unit = {},
     viewModel: SubredditListViewModel = hiltViewModel()
 ) {
     val authState by viewModel.authState.collectAsState()
@@ -102,12 +102,6 @@ fun SubredditListScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Show login header if not logged in
-                if (authState !is AuthState.LoggedIn) {
-                    item {
-                        NotLoggedInHeader(onLoginClick = onLoginClick)
-                    }
-                }
 
                 // My Subreddits Section (only if logged in)
                 if (authState is AuthState.LoggedIn) {
@@ -134,25 +128,12 @@ fun SubredditListScreen(
                         }
                     }
 
-                    // Show loading for first load
-                    if (uiState.isLoadingMy && mySubreddits.isEmpty()) {
-                        item {
-                            LoadingCard(progressMessage = uiState.loadingProgress)
-                        }
-                    }
-
-                    // Show loading progress while loading all
-                    if (uiState.isLoadingMy && mySubreddits.isNotEmpty() && uiState.loadingProgress != null) {
-                        item {
-                            LoadingProgressCard(progressMessage = uiState.loadingProgress!!)
-                        }
-                    }
-
                     // Show my subreddits
                     items(
                         items = mySubreddits,
                         key = { it.name }
                     ) { subreddit ->
+                        Logger.i("$subreddit")
                         SubredditCard(
                             subreddit = subreddit,
                             isSubscribed = true,
@@ -197,13 +178,6 @@ fun SubredditListScreen(
                                 onRetry = { viewModel.loadPopularSubreddits(forceRefresh = true) },
                                 onDismiss = { viewModel.clearErrors() }
                             )
-                        }
-                    }
-
-                    // Show loading for first load
-                    if (uiState.isLoadingPopular && popularSubreddits.isEmpty()) {
-                        item {
-                            LoadingCard()
                         }
                     }
 
@@ -441,7 +415,7 @@ private fun SubredditCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = subreddit.displayNamePrefixed,
+                    text = subreddit.displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -557,64 +531,6 @@ private fun ErrorCard(
                     Text("Retry")
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun LoadingCard(progressMessage: String? = null) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            CircularProgressIndicator(
-                color = RedditOrange
-            )
-
-            if (progressMessage != null) {
-                Text(
-                    text = progressMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LoadingProgressCard(progressMessage: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CircularProgressIndicator(
-                color = RedditOrange,
-                modifier = Modifier.size(24.dp),
-                strokeWidth = 2.dp
-            )
-
-            Text(
-                text = progressMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
         }
     }
 }

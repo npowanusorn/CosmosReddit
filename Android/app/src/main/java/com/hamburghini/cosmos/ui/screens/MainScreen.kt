@@ -93,7 +93,7 @@ fun MainScreen(
         ) {
             when (currentTab) {
                 BottomNavDestination.HOME -> HomeScreen()
-                BottomNavDestination.SUBREDDITS_LIST -> SubredditListScreen(onLoginClick = onLoginClick)
+                BottomNavDestination.SUBREDDITS_LIST -> SubredditListScreen()
                 BottomNavDestination.CHAT -> ChatScreen(profileViewModel)
                 BottomNavDestination.PROFILE -> ProfileScreen(
                     onLoginClick = onLoginClick,
