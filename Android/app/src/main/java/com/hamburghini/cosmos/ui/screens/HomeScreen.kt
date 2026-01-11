@@ -67,7 +67,7 @@ fun HomeScreen(
 
     val showScrollToTopFab by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex > 2
+            listState.firstVisibleItemIndex > 1
         }
     }
 
@@ -102,21 +102,12 @@ fun HomeScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Feed type indicator
-                item {
-                    FeedTypeIndicator(
-                        isPersonalized = uiState.isPersonalized,
-                        username = viewModel.getCurrentUsername(),
-                        isLoggedIn = viewModel.isLoggedIn()
-                    )
-                }
-
                 item {
                     SortFilterRow(
                         currentSort = uiState.currentSortType,
                         isPersonalized = uiState.isPersonalized,
                         onSortChanged = { sortType ->
-                            viewModel.loadPosts(sortType)
+                            viewModel.loadPostsForSort(sortType)
                         }
                     )
                 }
@@ -187,64 +178,6 @@ fun HomeScreen(
                     imageVector = Icons.Default.KeyboardArrowUp,
                     contentDescription = "Scroll to top"
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FeedTypeIndicator(
-    isPersonalized: Boolean,
-    username: String,
-    isLoggedIn: Boolean
-) {
-    if (isLoggedIn) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isPersonalized)
-                    MaterialTheme.colorScheme.primaryContainer
-                else
-                    MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = if (isPersonalized) Icons.Default.Person else Icons.Default.Public,
-                    contentDescription = null,
-                    tint = if (isPersonalized)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Text(
-                    text = if (isPersonalized)
-                        "Your personalized feed"
-                    else
-                        "Popular posts",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isPersonalized)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (isPersonalized) {
-                    Text(
-                        text = "• $username",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
     }

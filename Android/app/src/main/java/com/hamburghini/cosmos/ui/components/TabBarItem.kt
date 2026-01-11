@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,7 @@ fun TabBarItem(
     @DrawableRes outlineIconRes: Int,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
     showDot: Boolean = false
 ) {
@@ -89,10 +91,11 @@ fun TabBarItem(
         modifier = modifier
             .padding(4.dp)
             .scale(pressScale)
-            .clickable(
-                onClick = onClick,
+            .combinedClickable(
                 interactionSource = interactionSource,
-                indication = null
+                indication = null,
+                onClick = onClick,
+                onLongClick = onLongClick
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -110,7 +113,7 @@ fun TabBarItem(
         // Indicator dot
         Box(
             modifier = Modifier
-                .size(8.dp)
+                .size(6.dp)
                 .scale(dotScale)
                 .background(
                     color = if (isSelected) RedditOrange else Color.Transparent,

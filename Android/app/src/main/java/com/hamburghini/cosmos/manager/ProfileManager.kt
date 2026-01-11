@@ -1,5 +1,6 @@
 package com.hamburghini.cosmos.manager
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
@@ -24,6 +25,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.content.edit
 
 @Singleton
 class ProfileManager @Inject constructor(
@@ -112,7 +114,7 @@ class ProfileManager @Inject constructor(
     /**
      * Start login process using OAuth
      */
-    fun startLogin(activity: android.app.Activity? = null) {
+    fun startLogin(activity: Activity? = null) {
         _authState.value = AuthState.LoggingIn
         saveAuthState()
 
@@ -170,7 +172,7 @@ class ProfileManager @Inject constructor(
         _authState.value = AuthState.NotLoggedIn
 
         // Clear active account preference
-        prefs.edit().remove(KEY_ACTIVE_ACCOUNT_USERNAME).apply()
+        prefs.edit { remove(KEY_ACTIVE_ACCOUNT_USERNAME) }
         saveAuthState()
     }
 
@@ -189,8 +191,7 @@ class ProfileManager @Inject constructor(
 
             // Try to refresh the token first
             if (::authManager.isInitialized && account.refreshToken.isNotBlank()) {
-                val result = authManager.refreshAccessToken(account.refreshToken)
-                when (result) {
+                when (val result = authManager.refreshAccessToken(account.refreshToken)) {
                     is RedditAuthManager.AuthResult.Success -> {
                         completeLogin(result.account, result.userInfo)
                     }
@@ -238,8 +239,7 @@ class ProfileManager @Inject constructor(
         if (account.refreshToken.isBlank() || !::authManager.isInitialized) return false
 
         return try {
-            val result = authManager.refreshAccessToken(account.refreshToken)
-            when (result) {
+            when (val result = authManager.refreshAccessToken(account.refreshToken)) {
                 is RedditAuthManager.AuthResult.Success -> {
                     completeLogin(result.account, result.userInfo)
                     true
@@ -263,11 +263,28 @@ class ProfileManager @Inject constructor(
         if (activeUsername != null) {
             val account = _storedAccounts.value.find { it.username == activeUsername }
             if (account != null && account.refreshToken.isNotBlank()) {
+                // Set to LoggingIn state first
+                _authState.value = AuthState.LoggingIn
+
                 // Try to refresh the token in background
                 scope.launch {
-                    switchAccount(account)
+                    when (val result = authManager.refreshAccessToken(account.refreshToken)) {
+                        is RedditAuthManager.AuthResult.Success -> {
+                            completeLogin(result.account, result.userInfo)
+                        }
+                        is RedditAuthManager.AuthResult.Error -> {
+                            // Session restore failed - stay logged out
+                            _authState.value = AuthState.NotLoggedIn
+                        }
+                    }
                 }
+            } else {
+                // No valid account to restore
+                _authState.value = AuthState.NotLoggedIn
             }
+        } else {
+            // No previous session to restore
+            _authState.value = AuthState.NotLoggedIn
         }
     }
 
@@ -309,12 +326,13 @@ class ProfileManager @Inject constructor(
     }
 
     private fun loadLastAuthState() {
-        // Don't auto-restore login state - require fresh authentication
-        // But we can check if there were stored accounts
+        // Start with LoggingIn state if there's a stored account, NotLoggedIn otherwise
+        // This prevents HomeViewModel from loading public feed prematurely
         val activeUsername = prefs.getString(KEY_ACTIVE_ACCOUNT_USERNAME, null)
-        if (activeUsername != null && _storedAccounts.value.any { it.username == activeUsername }) {
-            // There was a previously active account, but start logged out for security
-            _authState.value = AuthState.NotLoggedIn
+        _authState.value = if (activeUsername != null && _storedAccounts.value.any { it.username == activeUsername }) {
+            AuthState.LoggingIn  // Will be resolved by tryRestorePreviousSession
+        } else {
+            AuthState.NotLoggedIn
         }
     }
 

@@ -17,6 +17,7 @@ fun CustomBottomTabBar(
     destinations: List<BottomNavDestination>,
     currentDestination: String?,
     onNavigate: (BottomNavDestination) -> Unit,
+    onProfileLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -37,8 +38,15 @@ fun CustomBottomTabBar(
                     outlineIconRes = destination.outlineIconRes,
                     isSelected = currentDestination == destination.route,
                     onClick = { onNavigate(destination) },
+                    onLongClick = {
+                        if (destination == BottomNavDestination.PROFILE) {
+                            onProfileLongClick()
+                        } else {
+                            onNavigate(destination)
+                        }
+                    },
                     modifier = Modifier.weight(1f),
-                    showDot = true // Enable the dot indicator
+                    showDot = true
                 )
             }
         }

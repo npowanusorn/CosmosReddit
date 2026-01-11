@@ -1,10 +1,10 @@
 package com.hamburghini.cosmos.ui.screens
 
-import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,18 +15,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -39,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,22 +43,25 @@ import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.util.PostUtils
-import com.hamburghini.cosmos.util.findActivity
 import com.hamburghini.cosmos.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
+    onLoginClick: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val authState by viewModel.authState.collectAsState()
     val storedAccounts by viewModel.storedAccounts.collectAsState()
-    val context = LocalContext.current
-    val activity = context.findActivity()
 
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 8.dp,
+            bottom = 16.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -71,8 +69,7 @@ fun ProfileScreen(
                 is AuthState.NotLoggedIn -> {
                     NotLoggedInHeader(
                         onLoginClick = {
-                            activity?.let { viewModel.startLogin(it) }
-                                ?: run { /* Handle case where activity is null */ }
+                            onLoginClick()
                         }
                     )
                 }
@@ -93,12 +90,10 @@ fun ProfileScreen(
                         error = errorAuthState.error,
                         canRetry = errorAuthState.canRetry,
                         onRetryClick = {
-                            activity?.let { viewModel.retryLogin(it) }
-                                ?: run { /* Handle case where activity is null */ }
+                            onLoginClick()
                         },
                         onLoginClick = {
-                            activity?.let { viewModel.startLogin(it) }
-                                ?: run { /* Handle case where activity is null */ }
+                            onLoginClick()
                         }
                     )
                 }

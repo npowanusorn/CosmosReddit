@@ -10,7 +10,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,29 +26,52 @@ class HomeViewModel @Inject constructor(
     val posts: StateFlow<List<Post>> = _posts.asStateFlow()
 
     private var currentAfter: String? = null
+    private var hasInitializedWithAuthState = false
 
     init {
-        // Observe authentication state changes and reload posts accordingly
+        // Observe authentication state changes and load appropriate feed
         viewModelScope.launch {
             profileManager.authState.collect { authState ->
                 when (authState) {
                     is AuthState.LoggedIn -> {
-                        // User just logged in - load personalized feed
-                        loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                        // User is logged in - load personalized feed
+                        if (!hasInitializedWithAuthState) {
+                            // First time initialization - load personalized feed
+                            hasInitializedWithAuthState = true
+                            loadPosts(_uiState.value.currentSortType)
+                        } else {
+                            // User just logged in - switch to personalized feed
+                            loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                        }
                     }
                     is AuthState.NotLoggedIn -> {
-                        // User logged out - load public feed
-                        loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                        if (!hasInitializedWithAuthState) {
+                            // First time initialization - load public feed
+                            hasInitializedWithAuthState = true
+                            loadPosts(_uiState.value.currentSortType)
+                        } else {
+                            // User just logged out - switch to public feed
+                            loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                        }
                     }
-                    else -> {
-                        // LoggingIn or AuthError states - don't reload
+                    is AuthState.LoggingIn -> {
+                        // Don't load posts while logging in, wait for final state
+                        if (!hasInitializedWithAuthState) {
+                            // If we're starting in LoggingIn state, wait for completion
+                            // This can happen if user was previously logged in and app is restoring session
+                        }
+                    }
+                    is AuthState.AuthError -> {
+                        if (!hasInitializedWithAuthState) {
+                            // Auth failed on startup - load public feed
+                            hasInitializedWithAuthState = true
+                            loadPosts(_uiState.value.currentSortType)
+                        }
+                        // If auth fails after being logged in, we'll already have posts loaded
                     }
                 }
             }
         }
-
-        // Initial load
-        loadPosts()
     }
 
     fun loadPosts(sortType: SortType = SortType.HOT, forceRefresh: Boolean = false) {
@@ -106,7 +128,19 @@ class HomeViewModel @Inject constructor(
                     }
                 } else {
                     val errorMessage = when (response.code()) {
-                        401 -> "Session expired - please log in again"
+                        401 -> {
+                            // Token might be expired, try to refresh
+                            if (isLoggedIn && profileManager.getCurrentAccount()?.refreshToken?.isNotBlank() == true) {
+                                // Try to refresh token and reload
+                                val refreshResult = profileManager.refreshCurrentToken()
+                                if (refreshResult) {
+                                    // Token refreshed, retry loading posts
+                                    loadPosts(sortType, forceRefresh = true)
+                                    return@launch
+                                }
+                            }
+                            "Session expired - please log in again"
+                        }
                         403 -> "Access denied - check permissions"
                         429 -> "Too many requests - please wait"
                         500, 502, 503 -> "Reddit server error - try again later"
@@ -297,6 +331,13 @@ class HomeViewModel @Inject constructor(
 
     fun isLoggedIn(): Boolean {
         return profileManager.isLoggedIn()
+    }
+
+    /**
+     * Force load posts for a specific sort type (called from UI)
+     */
+    fun loadPostsForSort(sortType: SortType) {
+        loadPosts(sortType, forceRefresh = false)
     }
 }
 

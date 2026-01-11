@@ -19,12 +19,15 @@ import com.hamburghini.cosmos.R
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.navigation.BottomNavDestination
 import com.hamburghini.cosmos.ui.components.CustomBottomTabBar
+import com.hamburghini.cosmos.ui.components.ProfileSwitcherBottomSheet
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
 import com.hamburghini.cosmos.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    onLoginClick: () -> Unit
+) {
     var currentTab by remember { mutableStateOf(BottomNavDestination.HOME) }
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val authState by profileViewModel.authState.collectAsState()
@@ -43,6 +46,8 @@ fun MainScreen() {
         BottomNavDestination.CHAT -> stringResource(R.string.tab_chat)
         BottomNavDestination.PROFILE -> stringResource(R.string.tab_profile)
     }
+
+    var showProfileSwitcher by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier
@@ -72,6 +77,12 @@ fun MainScreen() {
                 onNavigate = { destination ->
                     currentTab = destination
                 },
+                onProfileLongClick = {
+                    // Only show profile switcher if user is logged in or has stored accounts
+                    if (authState is AuthState.LoggedIn || profileViewModel.storedAccounts.value.isNotEmpty()) {
+                        showProfileSwitcher = true
+                    }
+                }
             )
         },
     ) { innerPadding ->
@@ -84,8 +95,23 @@ fun MainScreen() {
                 BottomNavDestination.HOME -> HomeScreen()
                 BottomNavDestination.SUBREDDITS_LIST -> SubredditListScreen(profileViewModel)
                 BottomNavDestination.CHAT -> ChatScreen(profileViewModel)
-                BottomNavDestination.PROFILE -> ProfileScreen(profileViewModel)
+                BottomNavDestination.PROFILE -> ProfileScreen(
+                    onLoginClick = onLoginClick,
+                    viewModel = profileViewModel
+                )
             }
+        }
+
+        // Profile Switcher Bottom Sheet
+        if (showProfileSwitcher) {
+            ProfileSwitcherBottomSheet(
+                onDismissRequest = { showProfileSwitcher = false },
+                onAddAccountClick = {
+                    showProfileSwitcher = false
+                    onLoginClick()
+                },
+                viewModel = profileViewModel
+            )
         }
     }
 }

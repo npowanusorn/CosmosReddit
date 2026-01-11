@@ -1,13 +1,14 @@
 package com.hamburghini.cosmos.viewmodel
 
-import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.RedditAccount
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,25 +20,17 @@ class ProfileViewModel @Inject constructor(
     val authState: StateFlow<AuthState> = profileManager.authState
     val storedAccounts: StateFlow<List<RedditAccount>> = profileManager.storedAccounts
 
+    // Track account switching state
+    private val _isSwitchingAccount = MutableStateFlow(false)
+    val isSwitchingAccount: StateFlow<Boolean> = _isSwitchingAccount.asStateFlow()
+
+    // Track last switch error
+    private val _switchError = MutableStateFlow<String?>(null)
+    val switchError: StateFlow<String?> = _switchError.asStateFlow()
+
     init {
         // Try to restore previous session if available
         profileManager.tryRestorePreviousSession()
-    }
-
-    /**
-     * Start OAuth login flow - this will open Chrome Custom Tab
-     * Requires Activity context to launch Chrome Custom Tab
-     */
-    fun startLogin(activity: Activity) {
-        profileManager.startLogin(activity)
-    }
-
-    /**
-     * Retry login after error
-     * Requires Activity context to launch Chrome Custom Tab
-     */
-    fun retryLogin(activity: Activity) {
-        startLogin(activity)
     }
 
     /**
@@ -48,11 +41,29 @@ class ProfileViewModel @Inject constructor(
     }
 
     /**
-     * Switch to a different stored account
+     * Switch to a different stored account with enhanced error handling
      */
     fun switchAccount(account: RedditAccount) {
         viewModelScope.launch {
-            profileManager.switchAccount(account)
+            _isSwitchingAccount.value = true
+            _switchError.value = null
+
+            try {
+                profileManager.switchAccount(account)
+
+                // Wait a moment to ensure state is updated
+                kotlinx.coroutines.delay(300)
+
+                // Check if switch was successful
+                if (authState.value !is AuthState.LoggedIn ||
+                    (authState.value as? AuthState.LoggedIn)?.account?.username != account.username) {
+                    _switchError.value = "Failed to switch to account"
+                }
+            } catch (e: Exception) {
+                _switchError.value = e.message ?: "Unknown error occurred"
+            } finally {
+                _isSwitchingAccount.value = false
+            }
         }
     }
 
@@ -72,6 +83,13 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Clear switch error
+     */
+    fun clearSwitchError() {
+        _switchError.value = null
+    }
+
     // Helper functions for UI
     fun isLoggedIn(): Boolean = profileManager.isLoggedIn()
 
@@ -83,4 +101,17 @@ class ProfileViewModel @Inject constructor(
      * Get authenticated API service if logged in
      */
     fun getAuthenticatedApiService() = profileManager.getAuthenticatedApiService()
+
+    /**
+     * Get number of stored accounts
+     */
+    fun getStoredAccountsCount(): Int = storedAccounts.value.size
+
+    /**
+     * Check if there are other accounts to switch to
+     */
+    fun hasOtherAccounts(): Boolean {
+        val currentUsername = (authState.value as? AuthState.LoggedIn)?.account?.username
+        return storedAccounts.value.any { it.username != currentUsername }
+    }
 }

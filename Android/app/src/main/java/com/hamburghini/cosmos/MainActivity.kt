@@ -40,7 +40,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    MainScreen(
+                        onLoginClick = { handleLogin() }
+                    )
                 }
             }
         }
@@ -58,8 +60,7 @@ class MainActivity : ComponentActivity() {
             // This is an OAuth callback
             lifecycleScope.launch {
                 try {
-                    val result = authManager.handleAuthCallback(intent)
-                    when (result) {
+                    when (val result = authManager.handleAuthCallback(intent)) {
                         is RedditAuthManager.AuthResult.Success -> {
                             // Complete login in ProfileManager
                             profileManager.completeLogin(result.account, result.userInfo)
@@ -74,5 +75,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Start OAuth login flow - this will open Chrome Custom Tab
+     * Requires Activity context to launch Chrome Custom Tab
+     */
+    private fun handleLogin() {
+        profileManager.startLogin(this)
     }
 }

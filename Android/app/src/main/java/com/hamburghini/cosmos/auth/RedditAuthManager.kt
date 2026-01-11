@@ -26,6 +26,7 @@ import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
 
 @Singleton
 class RedditAuthManager @Inject constructor(
@@ -59,12 +60,10 @@ class RedditAuthManager @Inject constructor(
             val customTabsIntent = CustomTabsIntent.Builder()
                 .setShowTitle(true)
                 .setUrlBarHidingEnabled(true)
-                .setStartAnimations(activity, android.R.anim.slide_in_left, android.R.anim.slide_out_right)
-                .setExitAnimations(activity, android.R.anim.slide_in_left, android.R.anim.slide_out_right)
                 .build()
 
             // Launch the Custom Tab from the Activity context
-            customTabsIntent.launchUrl(activity, Uri.parse(authUrl))
+            customTabsIntent.launchUrl(activity, authUrl.toUri())
 
             Log.d(TAG, "OAuth flow started successfully")
 
@@ -322,7 +321,7 @@ class RedditAuthManager @Inject constructor(
             val originalRequest = chain.request()
             val newRequest = originalRequest.newBuilder()
                 .header("Authorization", "Bearer $accessToken")
-                .header("User-Agent", "android:com.hamburghini.cosmos:v1.0 (by /u/YourUsername)")
+//                .header("User-Agent", "android:com.hamburghini.cosmos:v1.0 (by /u/YourUsername)")
                 .build()
             chain.proceed(newRequest)
         }

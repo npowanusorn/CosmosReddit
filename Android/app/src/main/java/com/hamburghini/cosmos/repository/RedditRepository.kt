@@ -4,6 +4,7 @@ import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.model.RedditListingResponse
 import com.hamburghini.cosmos.network.RetrofitClient
+import okhttp3.ResponseBody
 import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -124,7 +125,7 @@ class RedditRepository @Inject constructor(
     }
 
     // Voting functionality (authenticated)
-    suspend fun vote(postId: String, direction: Int): Response<okhttp3.ResponseBody> {
+    suspend fun vote(postId: String, direction: Int): Response<ResponseBody> {
         return try {
             val apiService = profileManager.getAuthenticatedApiService()
                 ?: throw IllegalStateException("User not logged in")
@@ -136,7 +137,7 @@ class RedditRepository @Inject constructor(
     }
 
     // Save/unsave functionality (authenticated)
-    suspend fun savePost(postId: String): Response<okhttp3.ResponseBody> {
+    suspend fun savePost(postId: String): Response<ResponseBody> {
         return try {
             val apiService = profileManager.getAuthenticatedApiService()
                 ?: throw IllegalStateException("User not logged in")
@@ -147,7 +148,7 @@ class RedditRepository @Inject constructor(
         }
     }
 
-    suspend fun unsavePost(postId: String): Response<okhttp3.ResponseBody> {
+    suspend fun unsavePost(postId: String): Response<ResponseBody> {
         return try {
             val apiService = profileManager.getAuthenticatedApiService()
                 ?: throw IllegalStateException("User not logged in")
