@@ -9,19 +9,32 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -29,46 +42,117 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.theme.RedditOrange
+import com.hamburghini.cosmos.viewmodel.HomeViewModel
+import com.hamburghini.cosmos.viewmodel.SortType
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val posts by viewModel.posts.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+
     val showScrollToTopFab by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex > 0
+            listState.firstVisibleItemIndex > 2
+        }
+    }
+
+    // Load more posts when reaching the end
+    LaunchedEffect(listState) {
+        // This effect will trigger when we scroll near the end
+        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        val totalItems = listState.layoutInfo.totalItemsCount
+
+        if (lastVisibleIndex != null &&
+            lastVisibleIndex >= totalItems - 3 &&
+            !uiState.isLoading &&
+            !uiState.isLoadingMore &&
+            uiState.hasMore) {
+            viewModel.loadMorePosts()
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(
-                top = 16.dp,
-                bottom = 16.dp
-            )
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading,
+            onRefresh = { viewModel.refreshPosts() },
+            modifier = Modifier.fillMaxSize()
         ) {
-            items(20) { index ->
-                PostCard(
-                    title = "Sample Reddit Post $index",
-                    author = "u/redditor$index",
-                    subreddit = "r/androiddev",
-                    content = "This is a sample post content for Reddit client. It demonstrates the home feed layout.",
-                    upvotes = (100..1000).random(),
-                    comments = (5..50).random()
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    bottom = 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    SortFilterRow(
+                        currentSort = uiState.currentSortType,
+                        onSortChanged = { sortType ->
+                            viewModel.loadPosts(sortType)
+                        }
+                    )
+                }
+
+                if (uiState.error != null && posts.isEmpty()) {
+                    item {
+                        ErrorMessage(
+                            error = "${uiState.error}",
+                            onRetry = { viewModel.refreshPosts() },
+                            onDismiss = { viewModel.clearError() }
+                        )
+                    }
+                } else {
+                    items(
+                        items = posts,
+                        key = { post -> post.id }
+                    ) { post ->
+                        PostCard(
+                            post = post,
+                            onPostClick = { clickedPost ->
+                                // TODO: Navigate to post detail
+                                println("Post clicked: ${clickedPost.title}")
+                            },
+                            onVote = { postId, direction ->
+                                // TODO: Implement voting
+                                println("Vote: $postId direction: $direction")
+                            }
+                        )
+                    }
+
+                    if (uiState.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = RedditOrange
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
+        // Floating Action Button for scroll to top
         AnimatedVisibility(
             visible = showScrollToTopFab,
             enter = scaleIn() + fadeIn(),
@@ -84,7 +168,8 @@ fun HomeScreen() {
                     }
                 },
                 containerColor = RedditOrange,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowUp,
@@ -96,59 +181,108 @@ fun HomeScreen() {
 }
 
 @Composable
-private fun PostCard(
-    title: String,
-    author: String,
-    subreddit: String,
-    content: String,
-    upvotes: Int,
-    comments: Int
+private fun SortFilterRow(
+    currentSort: SortType,
+    onSortChanged: (SortType) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = Modifier.fillMaxSize(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "$subreddit • Posted by $author",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Text(
-                text = content,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Text(
-                text = "↑ $upvotes • 💬 $comments comments",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        items(SortType.entries) { sortType ->
+            FilterChip(
+                selected = currentSort == sortType,
+                onClick = { onSortChanged(sortType) },
+                label = {
+                    Text(
+                        text = when (sortType) {
+                            SortType.HOT -> "Hot"
+                            SortType.NEW -> "New"
+                            SortType.TOP -> "Top"
+                            SortType.RISING -> "Rising"
+                        },
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = RedditOrange,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
     }
 }
 
-@Preview(
-    showSystemUi = true,
-    device = Devices.PHONE,
-    name = "Phone Preview"
-)
 @Composable
-fun HomeScreenPreview() {
-    HomeScreen()
+private fun ErrorMessage(
+    error: String,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "Oops! Something went wrong",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = error,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onRetry,
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+                Text("Retry")
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "No posts available",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "Pull to refresh or try a different sort option",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
 }
