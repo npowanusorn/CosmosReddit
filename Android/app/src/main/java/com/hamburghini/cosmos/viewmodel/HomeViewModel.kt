@@ -309,13 +309,15 @@ class HomeViewModel @Inject constructor(
                     repository.unsavePost(postId)
                 }
 
-                if (!response.isSuccessful) {
+                if (response.isSuccessful) {
+                    // Update the local post state immediately
+                    updatePostSavedState(postId, save)
+                } else {
                     val action = if (save) "save" else "unsave"
                     _uiState.value = _uiState.value.copy(
                         error = "Failed to $action post: ${response.code()}"
                     )
                 }
-                // If successful, the post saved state will be updated in the UI layer
             } catch (e: Exception) {
                 val action = if (save) "save" else "unsave"
                 _uiState.value = _uiState.value.copy(
@@ -323,6 +325,26 @@ class HomeViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * Update the saved state of a specific post in the local list
+     */
+    private fun updatePostSavedState(postId: String, saved: Boolean) {
+        _posts.value = _posts.value.map { post ->
+            if (post.name == postId) {
+                post.copy(saved = saved)
+            } else {
+                post
+            }
+        }
+    }
+
+    /**
+     * Get a specific post by ID from the current list
+     */
+    fun getPost(postId: String): Post? {
+        return _posts.value.find { it.name == postId }
     }
 
     fun getCurrentUsername(): String {

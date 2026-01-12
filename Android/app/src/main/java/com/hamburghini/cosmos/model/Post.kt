@@ -19,7 +19,7 @@ data class Post(
     @SerializedName("selftext") val selftext: String?, // Raw markdown content of a text post
     @SerializedName("selftext_html") val selftext_html: String?, // HTML rendered markdown content
     @SerializedName("likes") var likes: Boolean?, // true if upvoted, false if downvoted, null if no vote. Make mutable.
-    @SerializedName("saved") var saved: Boolean, // true if saved, false otherwise. Make mutable.
+    @SerializedName("saved") val saved: Boolean, // true if saved, false otherwise
     @SerializedName("preview") val preview: Preview?,
     @SerializedName("post_hint") val post_hint: String?, // "image", "link", "hosted:video", etc.
     @SerializedName("is_self") val is_self: Boolean, // Indicates if it's a self-text post

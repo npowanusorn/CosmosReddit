@@ -150,8 +150,8 @@ fun HomeScreen(
                             onVote = { postId, direction ->
                                 viewModel.voteOnPost(postId, direction)
                             },
-                            onMenuClick = { post ->
-                                selectedPost = post
+                            onMenuClick = { clickedPost ->
+                                selectedPost = clickedPost
                                 showPostMenu = true
                             }
                         )
@@ -211,25 +211,34 @@ fun HomeScreen(
 
     // Post Menu Bottom Sheet
     if (showPostMenu && selectedPost != null) {
+        // Get the latest post state from the view model
+        val currentPost = viewModel.getPost(selectedPost!!.name) ?: selectedPost!!
+
         PostMenuBottomSheet(
-            post = selectedPost!!,
+            post = currentPost,
             isLoggedIn = viewModel.isLoggedIn(),
             onDismissRequest = {
                 showPostMenu = false
                 selectedPost = null
             },
             onSaveClick = {
-                selectedPost?.let { post ->
-                    viewModel.savePost(post.name, !post.saved)
+                currentPost.let { post ->
+                    // Toggle save state
+                    val newSaveState = !post.saved
+                    viewModel.savePost(post.name, newSaveState)
+
+                    // Update selected post immediately for UI feedback
+                    selectedPost = post.copy(saved = newSaveState)
+
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
-                            if (post.saved) "Post unsaved" else "Post saved"
+                            if (newSaveState) "Post saved" else "Post unsaved"
                         )
                     }
                 }
             },
             onHideClick = {
-                selectedPost?.let { post ->
+                currentPost.let { post ->
                     // TODO: Implement hide functionality
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
@@ -239,7 +248,7 @@ fun HomeScreen(
                 }
             },
             onReportClick = {
-                selectedPost?.let { post ->
+                currentPost.let { post ->
                     // TODO: Navigate to report screen
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("Report functionality coming soon")
@@ -247,12 +256,12 @@ fun HomeScreen(
                 }
             },
             onShareClick = {
-                selectedPost?.let { post ->
+                currentPost.let { post ->
                     sharePost(context, post)
                 }
             },
             onCopyLinkClick = {
-                selectedPost?.let { post ->
+                currentPost.let { post ->
                     copyPostLink(context, post)
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("Link copied to clipboard")
@@ -260,7 +269,7 @@ fun HomeScreen(
                 }
             },
             onBlockUserClick = {
-                selectedPost?.let { post ->
+                currentPost.let { post ->
                     // TODO: Implement block user functionality
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("Block user functionality coming soon")
@@ -268,7 +277,7 @@ fun HomeScreen(
                 }
             },
             onViewProfileClick = {
-                selectedPost?.let { post ->
+                currentPost.let { post ->
                     // TODO: Navigate to user profile
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("Navigate to u/${post.author}")
@@ -276,7 +285,7 @@ fun HomeScreen(
                 }
             },
             onViewSubredditClick = {
-                selectedPost?.let { post ->
+                currentPost.let { post ->
                     // TODO: Navigate to subreddit
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("Navigate to ${post.subreddit_name_prefixed}")
