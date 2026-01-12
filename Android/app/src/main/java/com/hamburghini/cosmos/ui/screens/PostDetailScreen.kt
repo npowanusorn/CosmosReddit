@@ -74,8 +74,10 @@ fun PostDetailScreen(
 ) {
     val post by viewModel.post.collectAsState()
 
-    post?.let { currentPost ->
-        PostDetailContent(currentPost)
+    Box(modifier = modifier.fillMaxSize()) {
+        post?.let { currentPost ->
+            PostDetailContent(currentPost)
+        }
     }
 }
 
@@ -83,7 +85,6 @@ fun PostDetailScreen(
 private fun PostDetailContent(
     currentPost: Post
 ) {
-
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
