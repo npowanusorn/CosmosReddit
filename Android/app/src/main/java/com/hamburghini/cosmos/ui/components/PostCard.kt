@@ -2,6 +2,7 @@ package com.hamburghini.cosmos.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -34,12 +36,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.R
@@ -56,7 +62,8 @@ fun PostCard(
     post: Post,
     modifier: Modifier = Modifier,
     onPostClick: (Post) -> Unit = {},
-    onVote: (String, Int) -> Unit = { _, _ -> }
+    onVote: (String, Int) -> Unit = { _, _ -> },
+    onMenuClick: (Post) -> Unit = {}
 ) {
     var currentScore by remember { mutableIntStateOf(post.score) }
     var voteState by remember { mutableStateOf(post.likes) } // null = no vote, true = upvoted, false = downvoted
@@ -66,15 +73,34 @@ fun PostCard(
 
     Card(
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .combinedClickable(
+                onClick = { onPostClick(post) },
+                onLongClick = { onMenuClick(post) }
+            )
+            .drawWithContent {
+                drawContent()
+                if (post.saved) {
+
+                    val triangleSize = 24.dp.toPx()
+                    val path = Path().apply {
+                        moveTo(size.width, size.height)
+                        lineTo(size.width - triangleSize, size.height)
+                        lineTo(size.width, size.height - triangleSize)
+                        close()
+                    }
+
+                    drawPath(path, Color(0,200,0))
+                }
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp,
             pressedElevation = 6.dp
-        ),
-        onClick = { onPostClick(post) }
+        )
     ) {
         Column(
             modifier = Modifier
@@ -166,7 +192,8 @@ fun PostCard(
                     currentScore += scoreDiff
                     voteState = if (newVote == 0) null else false
                     onVote(post.name, newVote)
-                }
+                },
+                onMenuClick = onMenuClick
             )
         }
     }
@@ -351,6 +378,7 @@ private fun PostFooter(
     voteState: Boolean?,
     onUpvote: () -> Unit,
     onDownvote: () -> Unit,
+    onMenuClick: (Post) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -425,16 +453,60 @@ private fun PostFooter(
             }
 
             IconButton(
-                onClick = { /* TODO: Implement share */ },
+                onClick = { onMenuClick(post) },
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Share",
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "More",
                     tint = NeutralColor,
                     modifier = Modifier.size(16.dp)
                 )
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun PreviewPostCard() {
+    PostCard(
+        post = Post(
+            id = "xk9abc",
+            name = "t3_xk9abc",
+            title = "Jetpack Compose is actually pretty amazing",
+            author = "compose_dev",
+            subreddit = "androiddev",
+            subreddit_id = "t5_2qh0y",
+            subreddit_name_prefixed = "r/androiddev",
+            score = 1243,
+            num_comments = 187,
+            permalink = "/r/androiddev/comments/xk9abc/jetpack_compose_is_actually_pretty_amazing/",
+            url = "https://i.imgur.com/abcd123.jpg",
+            thumbnail = "https://i.imgur.com/abcd123_thumb.jpg",
+            created_utc = System.currentTimeMillis() / 1000,
+            selftext = "After using Compose for a few weeks, I’m honestly impressed...",
+            selftext_html = "<p>After using Compose for a few weeks, I’m honestly impressed...</p>",
+            likes = null,
+            saved = true,
+            preview = null,
+            post_hint = "image",
+            is_self = false,
+            media = null,
+            secure_media = null,
+            is_gallery = false,
+            gallery_data = null,
+            media_metadata = null,
+            link_flair_text = "Discussion",
+            over_18 = false,
+            spoiler = false,
+            hidden = false,
+            pinned = false,
+            stickied = false,
+            locked = false,
+            archived = false,
+            contest_mode = false,
+            quarantine = false
+        )
+    )
 }

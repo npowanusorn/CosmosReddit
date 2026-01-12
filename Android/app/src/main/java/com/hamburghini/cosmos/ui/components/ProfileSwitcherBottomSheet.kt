@@ -169,6 +169,9 @@ private fun ProfileSwitcherContent(
     onRemoveAccount: (RedditAccount) -> Unit,
     onDismissError: () -> Unit
 ) {
+    val isLoggedIn = authState is AuthState.LoggedIn
+    val hasContent = isLoggedIn || storedAccounts.isNotEmpty()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -210,9 +213,11 @@ private fun ProfileSwitcherContent(
             )
         }
 
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-        )
+        if (hasContent) {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
 
         // Error Message
         AnimatedVisibility(
@@ -279,9 +284,11 @@ private fun ProfileSwitcherContent(
         }
 
         // Add Account Button
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
+        if (hasContent) {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
 
         AddAccountButton(
             onClick = onAddAccountClick,

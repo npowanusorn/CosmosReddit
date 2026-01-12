@@ -6,7 +6,7 @@ object Constants {
     const val REDDIT_RESPONSE_TYPE = "code"
     const val REDDIT_STATE = "RANDOM_STRING_TO_PREVENT_CSRF"
     const val REDDIT_DURATION = "permanent"
-    const val REDDIT_SCOPE = "identity,read,submit,vote,privatemessages,mysubreddits"
+    const val REDDIT_SCOPE = "identity,read,submit,vote,privatemessages,mysubreddits,save,subscribe,history"
 
     // Base URL for OAuth
     const val REDDIT_AUTH_BASE_URL = "https://www.reddit.com/api/v1/authorize"

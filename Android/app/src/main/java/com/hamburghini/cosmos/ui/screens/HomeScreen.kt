@@ -1,5 +1,9 @@
 package com.hamburghini.cosmos.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,6 +38,8 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -41,15 +47,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.ui.components.PostCard
+import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.viewmodel.HomeViewModel
 import com.hamburghini.cosmos.viewmodel.SortType
@@ -64,6 +75,11 @@ fun HomeScreen(
     val posts by viewModel.posts.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var selectedPost by remember { mutableStateOf<Post?>(null) }
+    var showPostMenu by remember { mutableStateOf(false) }
 
     val showScrollToTopFab by remember {
         derivedStateOf {
@@ -133,6 +149,10 @@ fun HomeScreen(
                             },
                             onVote = { postId, direction ->
                                 viewModel.voteOnPost(postId, direction)
+                            },
+                            onMenuClick = { post ->
+                                selectedPost = post
+                                showPostMenu = true
                             }
                         )
                     }
@@ -154,6 +174,13 @@ fun HomeScreen(
                 }
             }
         }
+
+        // Snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+        )
 
         // Floating Action Button for scroll to top
         AnimatedVisibility(
@@ -181,6 +208,84 @@ fun HomeScreen(
             }
         }
     }
+
+    // Post Menu Bottom Sheet
+    if (showPostMenu && selectedPost != null) {
+        PostMenuBottomSheet(
+            post = selectedPost!!,
+            isLoggedIn = viewModel.isLoggedIn(),
+            onDismissRequest = {
+                showPostMenu = false
+                selectedPost = null
+            },
+            onSaveClick = {
+                selectedPost?.let { post ->
+                    viewModel.savePost(post.name, !post.saved)
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            if (post.saved) "Post unsaved" else "Post saved"
+                        )
+                    }
+                }
+            },
+            onHideClick = {
+                selectedPost?.let { post ->
+                    // TODO: Implement hide functionality
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            if (post.hidden == true) "TODO: Post unhidden" else "TODO: Post hidden"
+                        )
+                    }
+                }
+            },
+            onReportClick = {
+                selectedPost?.let { post ->
+                    // TODO: Navigate to report screen
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Report functionality coming soon")
+                    }
+                }
+            },
+            onShareClick = {
+                selectedPost?.let { post ->
+                    sharePost(context, post)
+                }
+            },
+            onCopyLinkClick = {
+                selectedPost?.let { post ->
+                    copyPostLink(context, post)
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Link copied to clipboard")
+                    }
+                }
+            },
+            onBlockUserClick = {
+                selectedPost?.let { post ->
+                    // TODO: Implement block user functionality
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Block user functionality coming soon")
+                    }
+                }
+            },
+            onViewProfileClick = {
+                selectedPost?.let { post ->
+                    // TODO: Navigate to user profile
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Navigate to u/${post.author}")
+                    }
+                }
+            },
+            onViewSubredditClick = {
+                selectedPost?.let { post ->
+                    // TODO: Navigate to subreddit
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Navigate to ${post.subreddit_name_prefixed}")
+                    }
+                }
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -272,4 +377,20 @@ private fun ErrorMessage(
             }
         }
     }
+}
+
+private fun sharePost(context: Context, post: Post) {
+    val shareIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, post.title)
+        putExtra(Intent.EXTRA_TEXT, "https://reddit.com${post.permalink}")
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "Share post via"))
+}
+
+private fun copyPostLink(context: Context, post: Post) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip = ClipData.newPlainText("Reddit post link", "https://reddit.com${post.permalink}")
+    clipboard.setPrimaryClip(clip)
 }
