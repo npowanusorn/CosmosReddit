@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +47,7 @@ import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
 import com.hamburghini.cosmos.ui.theme.UpvoteColor
+import com.hamburghini.cosmos.util.PhotoViewerUtils
 import com.hamburghini.cosmos.util.PostType
 import com.hamburghini.cosmos.util.PostUtils
 
@@ -60,6 +62,7 @@ fun PostCard(
     var voteState by remember { mutableStateOf(post.likes) } // null = no vote, true = upvoted, false = downvoted
 
     val postType = PostUtils.getPostType(post)
+    val context = LocalContext.current
 
     Card(
         modifier = modifier
@@ -109,11 +112,29 @@ fun PostCard(
 
             // Content based on post type
             when (postType) {
-                PostType.IMAGE -> PostImageContent(post)
+                PostType.IMAGE -> PostImageContent(
+                    post = post,
+                    onImageClick = {
+                        // Launch photo viewer for single image
+                        val imageUrls = PhotoViewerUtils.extractImageUrls(post)
+                        if (imageUrls.isNotEmpty()) {
+                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                        }
+                    }
+                )
                 PostType.VIDEO -> PostVideoContent(post)
                 PostType.TEXT -> PostTextContent(post)
                 PostType.LINK -> PostLinkContent(post)
-                PostType.GALLERY -> PostGalleryContent(post)
+                PostType.GALLERY -> PostGalleryContent(
+                    post = post,
+                    onGalleryClick = {
+                        // Launch photo viewer for gallery
+                        val imageUrls = PhotoViewerUtils.extractImageUrls(post)
+                        if (imageUrls.isNotEmpty()) {
+                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                        }
+                    }
+                )
                 PostType.UNKNOWN -> Unit
             }
 
@@ -189,7 +210,10 @@ private fun PostHeader(post: Post) {
 }
 
 @Composable
-private fun PostImageContent(post: Post) {
+private fun PostImageContent(
+    post: Post,
+    onImageClick: () -> Unit
+) {
     PostUtils.getImageUrl(post)?.let { imageUrl ->
         AsyncImage(
             model = imageUrl,
@@ -197,7 +221,8 @@ private fun PostImageContent(post: Post) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onImageClick() },
             contentScale = ContentScale.Crop,
             error = painterResource(R.drawable.ic_launcher_background)
         )
@@ -285,12 +310,19 @@ private fun PostLinkContent(post: Post) {
 }
 
 @Composable
-private fun PostGalleryContent(post: Post) {
+private fun PostGalleryContent(
+    post: Post,
+    onGalleryClick: () -> Unit
+) {
+    val imageCount = post.gallery_data?.items?.size ?: 0
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onGalleryClick() }
             .background(
                 MaterialTheme.colorScheme.surfaceVariant,
                 RoundedCornerShape(8.dp)
@@ -304,9 +336,10 @@ private fun PostGalleryContent(post: Post) {
         )
 
         Text(
-            text = "Gallery (${post.gallery_data?.items?.size ?: "Multiple"} images)",
+            text = "Gallery ($imageCount images)",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium
         )
     }
 }

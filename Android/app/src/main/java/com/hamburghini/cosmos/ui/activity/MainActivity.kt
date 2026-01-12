@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos
+package com.hamburghini.cosmos.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
