@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
@@ -38,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.R
+import com.hamburghini.cosmos.model.Image
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,12 +48,13 @@ import com.hamburghini.cosmos.ui.theme.RedditOrange
 fun RedditTopAppBar(
     title: String,
     showLogo: Boolean = false,
-    onSearchClick: () -> Unit = {},
-    onNotificationClick: () -> Unit = {},
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable (RowScope.() -> Unit) = {},
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
         modifier = modifier,
+        navigationIcon = navigationIcon,
         title = {
             if (showLogo) {
                 // Show Reddit logo on home screen
@@ -70,27 +74,7 @@ fun RedditTopAppBar(
                 )
             }
         },
-        actions = {
-            // Search button
-            IconButton(onClick = onSearchClick) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = stringResource(R.string.search),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            // Notifications button
-            IconButton(onClick = onNotificationClick) {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = stringResource(R.string.notifications),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-        },
+        actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -105,7 +89,7 @@ fun RedditTopAppBar(
     name = "showLogo = true"
 )
 @Composable
-fun RedditLogo() {
+fun PreviewTopAppBarWithRedditLogo() {
     RedditTopAppBar(
         title = "Title",
         showLogo = true
@@ -117,9 +101,30 @@ fun RedditLogo() {
     name = "showLogo = false"
 )
 @Composable
-fun PreviewTitle() {
+fun PreviewTopAppBarTextTitle() {
     RedditTopAppBar(
         title = "Title",
         showLogo = false
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(
+    name = "navigationIcon"
+)
+@Composable
+fun PreviewTopAppBar() {
+    RedditTopAppBar(
+        title = "Title",
+        navigationIcon = {
+            IconButton(
+                onClick = {}
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ChevronLeft,
+                    contentDescription = null,
+                )
+            }
+        }
     )
 }

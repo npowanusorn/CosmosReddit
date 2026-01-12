@@ -1,7 +1,10 @@
 package com.hamburghini.cosmos.model
 
+import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 data class Post(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String, // Full ID, e.g., "t3_xxxxxx"
@@ -38,41 +41,84 @@ data class Post(
     @SerializedName("archived") val archived: Boolean?, // Archived post flag
     @SerializedName("contest_mode") val contest_mode: Boolean?, // Contest mode flag
     @SerializedName("quarantine") val quarantine: Boolean? // Quarantined post flag
-)
+) : Parcelable {
+    companion object {
+        val mock = Post(
+            id = "xk9abc",
+            name = "t3_xk9abc",
+            title = "Jetpack Compose is actually pretty amazing",
+            author = "compose_dev",
+            subreddit = "androiddev",
+            subreddit_id = "t5_2qh0y",
+            subreddit_name_prefixed = "r/androiddev",
+            score = 1243,
+            num_comments = 187,
+            permalink = "/r/androiddev/comments/xk9abc/jetpack_compose_is_actually_pretty_amazing/",
+            url = "https://i.imgur.com/abcd123.jpg",
+            thumbnail = "https://i.imgur.com/abcd123_thumb.jpg",
+            created_utc = System.currentTimeMillis() / 1000,
+            selftext = "After using Compose for a few weeks, I’m honestly impressed...",
+            selftext_html = "<p>After using Compose for a few weeks, I’m honestly impressed...</p>",
+            likes = null,
+            saved = true,
+            preview = null,
+            post_hint = "image",
+            is_self = false,
+            media = null,
+            secure_media = null,
+            is_gallery = false,
+            gallery_data = null,
+            media_metadata = null,
+            link_flair_text = "Discussion",
+            over_18 = false,
+            spoiler = false,
+            hidden = false,
+            pinned = false,
+            stickied = false,
+            locked = false,
+            archived = false,
+            contest_mode = false,
+            quarantine = false
+        )
+    }
+}
 
+@Parcelize
 data class Preview(
     @SerializedName("images") val images: List<Image>?,
     @SerializedName("enabled") val enabled: Boolean?
-    // You might also find "reddit_video_preview" here for video posts,
-    // but we'll keep it simple for now and focus on image previews.
-)
+) : Parcelable
 
+@Parcelize
 data class Image(
     @SerializedName("source") val source: Source?,
-    @SerializedName("resolutions") val resolutions: List<Source>?, // Resolutions also use the Source structure
+    @SerializedName("resolutions") val resolutions: List<Source>?,
     @SerializedName("id") val id: String?
-)
+) : Parcelable
 
+@Parcelize
 data class Source(
     @SerializedName("url") val url: String,
     @SerializedName("width") val width: Int,
     @SerializedName("height") val height: Int
-)
+) : Parcelable
 
 /**
  * Represents the 'media' or 'secure_media' object in a Reddit Post.
  * It can contain details for Reddit-hosted videos or external oEmbed content.
  */
+@Parcelize
 data class Media(
-    @SerializedName("reddit_video") val reddit_video: RedditVideo?, // Details for Reddit-hosted videos
-    @SerializedName("oembed") val oembed: OEmbed?, // Details for oEmbed content (e.g., YouTube, Imgur)
-    @SerializedName("type") val type: String? // The type of media, e.g., "youtube.com", "i.redd.it"
-)
+    @SerializedName("reddit_video") val reddit_video: RedditVideo?,
+    @SerializedName("oembed") val oembed: OEmbed?,
+    @SerializedName("type") val type: String?
+) : Parcelable
 
 /**
  * Represents the 'reddit_video' object within the 'media' field.
  * Contains URLs and properties for Reddit's hosted videos/GIFs.
  */
+@Parcelize
 data class RedditVideo(
     @SerializedName("fallback_url") val fallback_url: String?, // Direct URL to the video, suitable for playback
     @SerializedName("height") val height: Int?,
@@ -83,12 +129,13 @@ data class RedditVideo(
     @SerializedName("hls_url") val hls_url: String?, // URL for HLS manifest
     @SerializedName("is_gif") val is_gif: Boolean?, // True if it's a GIF that's been converted to video
     @SerializedName("transcoding_status") val transcoding_status: String?
-)
+) : Parcelable
 
 /**
  * Represents the 'oembed' object within the 'media' field.
  * Contains details for rich external content that supports oEmbed, like YouTube videos.
  */
+@Parcelize
 data class OEmbed(
     @SerializedName("provider_url") val provider_url: String?, // URL of the content provider (e.g., "https://www.youtube.com/")
     @SerializedName("version") val version: String?,
@@ -103,24 +150,28 @@ data class OEmbed(
     @SerializedName("thumbnail_url") val thumbnail_url: String?, // URL for a thumbnail image
     @SerializedName("thumbnail_height") val thumbnail_height: Int?,
     @SerializedName("author_url") val author_url: String?
-)
+) : Parcelable
 
+@Parcelize
 data class GalleryItem(
     @SerializedName("media_id") val mediaId: String
-)
+) : Parcelable
 
+@Parcelize
 data class GalleryData(
     val items: List<GalleryItem>
-)
+) : Parcelable
 
+@Parcelize
 data class MediaMetadataItem(
     @SerializedName("status") val status: String,
     @SerializedName("s") val mediaSource: MediaSource,
     @SerializedName("p") val downscaledSource: List<MediaSource>
-)
+) : Parcelable
 
+@Parcelize
 data class MediaSource(
     @SerializedName("u") val url: String,
     @SerializedName("x") val width: Int,
     @SerializedName("y") val height: Int
-)
+) : Parcelable

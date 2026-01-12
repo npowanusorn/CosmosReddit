@@ -471,42 +471,6 @@ private fun PostFooter(
 @Composable
 fun PreviewPostCard() {
     PostCard(
-        post = Post(
-            id = "xk9abc",
-            name = "t3_xk9abc",
-            title = "Jetpack Compose is actually pretty amazing",
-            author = "compose_dev",
-            subreddit = "androiddev",
-            subreddit_id = "t5_2qh0y",
-            subreddit_name_prefixed = "r/androiddev",
-            score = 1243,
-            num_comments = 187,
-            permalink = "/r/androiddev/comments/xk9abc/jetpack_compose_is_actually_pretty_amazing/",
-            url = "https://i.imgur.com/abcd123.jpg",
-            thumbnail = "https://i.imgur.com/abcd123_thumb.jpg",
-            created_utc = System.currentTimeMillis() / 1000,
-            selftext = "After using Compose for a few weeks, I’m honestly impressed...",
-            selftext_html = "<p>After using Compose for a few weeks, I’m honestly impressed...</p>",
-            likes = null,
-            saved = true,
-            preview = null,
-            post_hint = "image",
-            is_self = false,
-            media = null,
-            secure_media = null,
-            is_gallery = false,
-            gallery_data = null,
-            media_metadata = null,
-            link_flair_text = "Discussion",
-            over_18 = false,
-            spoiler = false,
-            hidden = false,
-            pinned = false,
-            stickied = false,
-            locked = false,
-            archived = false,
-            contest_mode = false,
-            quarantine = false
-        )
+        post = Post.mock
     )
 }

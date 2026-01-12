@@ -58,7 +58,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.hamburghini.cosmos.Constants
 import com.hamburghini.cosmos.model.Post
+import com.hamburghini.cosmos.ui.activity.PostDetailActivity
 import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
@@ -146,6 +148,11 @@ fun HomeScreen(
                             onPostClick = { clickedPost ->
                                 // TODO: Navigate to post detail
                                 println("Post clicked: ${clickedPost.title}")
+                                context.startActivity(
+                                    Intent(context, PostDetailActivity::class.java).apply {
+                                        putExtra(Constants.CLICKED_POST_PARCELABLE, clickedPost)
+                                    }
+                                )
                             },
                             onVote = { postId, direction ->
                                 viewModel.voteOnPost(postId, direction)

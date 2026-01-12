@@ -42,4 +42,5 @@
     <string name="recent_activity">Recent Activity</string>
 
     <string name="title_activity_photo_viewer">PhotoViewerActivity</string>
+    <string name="title_activity_post_detail">PostDetailActivity</string>
 </resources>

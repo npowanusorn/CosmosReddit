@@ -1,6 +1,7 @@
 package com.hamburghini.cosmos.model
 
 import com.google.gson.annotations.SerializedName
+import kotlin.random.Random
 
 data class SubredditAbout(
     @SerializedName("data") val data: SubredditAboutData
@@ -39,4 +40,45 @@ data class SubredditAboutData(
     @SerializedName("restrict_commenting") val restrictCommenting: Boolean?,
     @SerializedName("quarantine") val quarantine: Boolean?,
     @SerializedName("url") val url: String?
-)
+) {
+    companion object {
+        private val random = Random(Random.nextInt())
+        val mock = SubredditAboutData(
+            displayName = "AndroidDev",
+            displayNamePrefixed = "r/AndroidDev",
+            name = "t5_${random.nextInt(100000)}",
+            id = random.nextInt(100000).toString(),
+            title = "Android Developers Community",
+            publicDescription = "A community for Android developers.",
+            description = "Longer description about Android development.",
+            descriptionHtml = "<p>Android development discussion</p>",
+            subscribers = random.nextInt(1_000, 5_000_000),
+            accountsActive = random.nextInt(10, 50_000),
+            iconImg = null,
+            bannerImg = null,
+            bannerBackgroundImage = null,
+            headerImg = null,
+            communityIcon = null,
+            over18 = false,
+            createdUtc = System.currentTimeMillis() / 1000 - random.nextLong(
+                1_000_000,
+                100_000_000
+            ),
+            userIsSubscriber = random.nextBoolean(),
+            userIsModerator = false,
+            userIsBanned = false,
+            userIsMuted = false,
+            subredditType = "public",
+            submissionType = "any",
+            allowImages = true,
+            allowVideos = true,
+            primaryColor = "#3DDC84",
+            keyColor = "#1E88E5",
+            activeUserCount = random.nextInt(0, 20_000),
+            restrictPosting = false,
+            restrictCommenting = false,
+            quarantine = false,
+            url = "https://www.reddit.com/r/AndroidDev/"
+        )
+    }
+}

@@ -18,9 +18,14 @@
         android:theme="@style/Theme.Cosmos"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".ui.activity.PhotoViewerActivity"
+            android:name=".ui.activity.PostDetailActivity"
             android:exported="false"
+            android:label="@string/title_activity_post_detail"
+            android:theme="@style/Theme.Cosmos" />
+        <activity
+            android:name=".ui.activity.PhotoViewerActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false"
             android:label="@string/title_activity_photo_viewer"
             android:screenOrientation="unspecified"
             android:theme="@style/Theme.Cosmos" />

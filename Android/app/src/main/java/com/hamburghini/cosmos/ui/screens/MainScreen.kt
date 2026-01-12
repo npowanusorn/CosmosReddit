@@ -1,10 +1,18 @@
 package com.hamburghini.cosmos.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -14,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.R
 import com.hamburghini.cosmos.model.AuthState
@@ -57,17 +66,36 @@ fun MainScreen(
             RedditTopAppBar(
                 title = currentTitle,
                 showLogo = currentTab == BottomNavDestination.HOME,
-                onSearchClick = {
-                    println("onSearchClick")
-                },
-                onNotificationClick = {
-                    if (authState is AuthState.LoggedIn) {
-                        println("onNotificationClick for user: ${(authState as AuthState.LoggedIn).account.username}")
-                    } else {
-                        println("Notifications require login")
-                        // Could show a login prompt here
+                actions = {
+                    // Search button
+                    IconButton(onClick = {
+                        println("onSearchClick")
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = stringResource(R.string.search),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
-                },
+
+                    // Notifications button
+                    IconButton(onClick = {
+                        if (authState is AuthState.LoggedIn) {
+                            println("onNotificationClick for user: ${(authState as AuthState.LoggedIn).account.username}")
+                        } else {
+                            println("Notifications require login")
+                            // Could show a login prompt here
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = stringResource(R.string.notifications),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
             )
         },
         bottomBar = {
