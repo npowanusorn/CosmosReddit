@@ -74,6 +74,7 @@ dependencies {
     implementation("androidx.browser:browser:1.10.0-alpha02")
     implementation("androidx.webkit:webkit:1.15.0")
     implementation("androidx.security:security-crypto:1.1.0")
+    implementation("net.engawapg.lib:zoomable:2.9.0")
 
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
