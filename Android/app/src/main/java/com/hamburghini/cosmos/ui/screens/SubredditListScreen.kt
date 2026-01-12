@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Refresh
@@ -38,12 +37,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -53,18 +52,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.hamburghini.cosmos.R
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.SubredditAboutData
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.util.Logger
 import com.hamburghini.cosmos.viewmodel.SubredditListViewModel
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +77,7 @@ fun SubredditListScreen(
     val authState by viewModel.authState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val mySubreddits by viewModel.mySubreddits.collectAsState()
+    val favoriteSubreddits by viewModel.favoriteSubreddits.collectAsState()
     val popularSubreddits by viewModel.popularSubreddits.collectAsState()
 
     val listState = rememberLazyListState()
@@ -102,6 +106,35 @@ fun SubredditListScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+
+                // Favorites Section (only if logged in and has favorites)
+                if (authState is AuthState.LoggedIn && favoriteSubreddits.isNotEmpty() && mySubreddits.isNotEmpty()) {
+                    item {
+                        SectionHeader(
+                            title = "Favorites",
+                            count = favoriteSubreddits.size,
+                        )
+                    }
+
+                    items(
+                        items = favoriteSubreddits,
+                        key = { "favorite_$it" }
+                    ) { favorite ->
+                        val favoriteSubreddit = mySubreddits.first { it.name == favorite }
+                        SubredditCard(
+                            subreddit = favoriteSubreddit,
+                            isSubscribed = true,
+                            isFavorited = true,
+                            canInteract = true,
+                            onFavoriteClick = {},
+                            onSubredditClick = {}
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
 
                 // My Subreddits Section (only if logged in)
                 if (authState is AuthState.LoggedIn) {
@@ -137,10 +170,12 @@ fun SubredditListScreen(
                         SubredditCard(
                             subreddit = subreddit,
                             isSubscribed = true,
+                            isFavorited = viewModel.isFavorited(subreddit.name),
                             canInteract = true,
-                            onSubscribeClick = {
-                                viewModel.subscribeToSubreddit(subreddit.name, false)
-                            }
+                            onFavoriteClick = {
+                                viewModel.toggleFavorite(subreddit.name)
+                            },
+                            onSubredditClick = {}
                         )
                     }
 
@@ -189,10 +224,10 @@ fun SubredditListScreen(
                         SubredditCard(
                             subreddit = subreddit,
                             isSubscribed = false,
+                            isFavorited = false,
                             canInteract = false,
-                            onSubscribeClick = {
-                                viewModel.subscribeToSubreddit(subreddit.name, false)
-                            }
+                            onFavoriteClick = {},
+                            onSubredditClick = {}
                         )
                     }
 
@@ -240,7 +275,7 @@ private fun SectionHeader(
     count: Int,
     showLoadAll: Boolean = false,
     isLoading: Boolean = false,
-    onLoadAllClick: () -> Unit = {}
+    onLoadAllClick: () -> Unit = {},
 ) {
     Row(
         modifier = Modifier
@@ -249,19 +284,24 @@ private fun SectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            if (count > 0) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Column {
                 Text(
-                    text = "$count communities",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
+
+                if (count > 0) {
+                    Text(
+                        text = "$count communities",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -277,6 +317,96 @@ private fun SectionHeader(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Load All", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubredditCard(
+    subreddit: SubredditAboutData,
+    isSubscribed: Boolean,
+    isFavorited: Boolean,
+    canInteract: Boolean,
+    onFavoriteClick: () -> Unit,
+    onSubredditClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onSubredditClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Community icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+            ) {
+                val iconUrl = subreddit.communityIcon?.takeIf { it.isNotBlank() }
+                    ?: subreddit.iconImg?.takeIf { it.isNotBlank() }
+
+                if (iconUrl != null) {
+                    AsyncImage(
+                        model = iconUrl,
+                        contentDescription = "${subreddit.displayName} icon",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                if (isSubscribed) RedditOrange else MaterialTheme.colorScheme.primary
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = subreddit.displayName.take(2).uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = subreddit.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            if (canInteract) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Favorite button (only for logged in users)
+                    IconButton(onClick = onFavoriteClick) {
+                        Icon(
+                            painter = painterResource(if (isFavorited) R.drawable.ic_star_filled else R.drawable.ic_star),
+                            contentDescription = if (isFavorited) "Remove from favorites" else "Add to favorites",
+                            tint = if (isFavorited) RedditOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }
@@ -349,136 +479,6 @@ private fun NotLoggedInHeader(onLoginClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-        }
-    }
-}
-
-@Composable
-private fun SubredditCard(
-    subreddit: SubredditAboutData,
-    isSubscribed: Boolean,
-    canInteract: Boolean,
-    onSubscribeClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Community icon
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-            ) {
-                val iconUrl = subreddit.communityIcon?.takeIf { it.isNotBlank() }
-                    ?: subreddit.iconImg?.takeIf { it.isNotBlank() }
-
-                if (iconUrl != null) {
-                    AsyncImage(
-                        model = iconUrl,
-                        contentDescription = "${subreddit.displayName} icon",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                if (isSubscribed) RedditOrange else MaterialTheme.colorScheme.primary
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = subreddit.displayName.take(2).uppercase(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = subreddit.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                if (subreddit.publicDescription?.isNotBlank() == true) {
-                    Text(
-                        text = subreddit.publicDescription,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${formatSubscriberCount(subreddit.subscribers)} members",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    if (subreddit.activeUserCount != null && subreddit.activeUserCount > 0) {
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Text(
-                            text = "${formatSubscriberCount(subreddit.activeUserCount)} online",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            if (canInteract) {
-                if (isSubscribed) {
-                    OutlinedButton(
-                        onClick = onSubscribeClick,
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Text("Joined", style = MaterialTheme.typography.labelMedium)
-                    }
-                } else {
-                    Button(
-                        onClick = onSubscribeClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RedditOrange
-                        ),
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Text("Join", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-            }
         }
     }
 }
@@ -596,4 +596,54 @@ private fun formatSubscriberCount(count: Int): String {
         count >= 1_000 -> String.format("%.1fk", count / 1_000.0)
         else -> count.toString()
     }
+}
+
+@Preview
+@Composable
+fun PreviewSubredditCard() {
+    val random = Random(Random.nextInt())
+    SubredditCard(
+        subreddit = SubredditAboutData(
+            displayName = "AndroidDev",
+            displayNamePrefixed = "r/AndroidDev",
+            name = "t5_${random.nextInt(100000)}",
+            id = random.nextInt(100000).toString(),
+            title = "Android Developers Community",
+            publicDescription = "A community for Android developers.",
+            description = "Longer description about Android development.",
+            descriptionHtml = "<p>Android development discussion</p>",
+            subscribers = random.nextInt(1_000, 5_000_000),
+            accountsActive = random.nextInt(10, 50_000),
+            iconImg = null,
+            bannerImg = null,
+            bannerBackgroundImage = null,
+            headerImg = null,
+            communityIcon = null,
+            over18 = false,
+            createdUtc = System.currentTimeMillis() / 1000 - random.nextLong(
+                1_000_000,
+                100_000_000
+            ),
+            userIsSubscriber = random.nextBoolean(),
+            userIsModerator = false,
+            userIsBanned = false,
+            userIsMuted = false,
+            subredditType = "public",
+            submissionType = "any",
+            allowImages = true,
+            allowVideos = true,
+            primaryColor = "#3DDC84",
+            keyColor = "#1E88E5",
+            activeUserCount = random.nextInt(0, 20_000),
+            restrictPosting = false,
+            restrictCommenting = false,
+            quarantine = false,
+            url = "https://www.reddit.com/r/AndroidDev/"
+        ),
+        isSubscribed = true,
+        isFavorited = true,
+        canInteract = true,
+        onSubredditClick = {},
+        onFavoriteClick = {}
+    )
 }

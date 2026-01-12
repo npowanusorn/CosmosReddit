@@ -2,6 +2,7 @@ package com.hamburghini.cosmos.di
 
 import android.content.Context
 import com.hamburghini.cosmos.auth.RedditAuthManager
+import com.hamburghini.cosmos.manager.FavoritesManager
 import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.manager.SubscriptionCacheManager
 import com.hamburghini.cosmos.repository.RedditRepository
@@ -52,5 +53,13 @@ object AppModule {
         @ApplicationContext context: Context
     ): SubscriptionCacheManager {
         return SubscriptionCacheManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFavoritesManager(
+        @ApplicationContext context: Context
+    ): FavoritesManager {
+        return FavoritesManager(context)
     }
 }

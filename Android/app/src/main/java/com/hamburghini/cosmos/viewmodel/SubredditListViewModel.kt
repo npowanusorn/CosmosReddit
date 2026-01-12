@@ -2,10 +2,12 @@ package com.hamburghini.cosmos.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hamburghini.cosmos.manager.FavoritesManager
 import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.SubredditAboutData
 import com.hamburghini.cosmos.repository.RedditRepository
+import com.hamburghini.cosmos.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SubredditListViewModel @Inject constructor(
     private val repository: RedditRepository,
-    private val profileManager: ProfileManager
+    private val profileManager: ProfileManager,
+    private val favoritesManager: FavoritesManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SubredditListUiState())
@@ -25,6 +28,9 @@ class SubredditListViewModel @Inject constructor(
 
     private val _mySubreddits = MutableStateFlow<List<SubredditAboutData>>(emptyList())
     val mySubreddits: StateFlow<List<SubredditAboutData>> = _mySubreddits.asStateFlow()
+
+    private val _favoriteSubreddits = MutableStateFlow<List<String>>(emptyList())
+    val favoriteSubreddits: StateFlow<List<String>> = _favoriteSubreddits.asStateFlow()
 
     private val _popularSubreddits = MutableStateFlow<List<SubredditAboutData>>(emptyList())
     val popularSubreddits: StateFlow<List<SubredditAboutData>> = _popularSubreddits.asStateFlow()
@@ -39,12 +45,14 @@ class SubredditListViewModel @Inject constructor(
             profileManager.authState.collect { authState ->
                 when (authState) {
                     is AuthState.LoggedIn -> {
-                        // User is logged in - load subscriptions
+                        // User is logged in - load subscriptions and favorites
                         loadMySubscriptions()
+                        loadFavorites()
                         loadPopularSubreddits()
                     }
                     is AuthState.NotLoggedIn -> {
                         // User is not logged in - only load popular
+                        _favoriteSubreddits.value = emptyList()
                         loadPopularSubreddits()
                     }
                     else -> {
@@ -53,6 +61,55 @@ class SubredditListViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Load favorites for current user
+     */
+    fun loadFavorites() {
+        val username = profileManager.getCurrentAccount()?.username ?: return
+
+        viewModelScope.launch {
+            try {
+                val favorites = favoritesManager.getFavoritesForUser(username)
+                _favoriteSubreddits.value = favorites
+            } catch (e: Exception) {
+                // Silently fail - favorites are optional
+            }
+        }
+    }
+
+    /**
+     * Toggle favorite status of a subreddit
+     */
+    fun toggleFavorite(subreddit: String) {
+        val username = profileManager.getCurrentAccount()?.username ?: return
+
+        viewModelScope.launch {
+            try {
+                val isFavorited = favoritesManager.isFavorited(username, subreddit)
+
+                if (isFavorited) {
+                    favoritesManager.removeFavorite(username, subreddit)
+                } else {
+                    favoritesManager.addFavorite(username, subreddit)
+                }
+
+                // Reload favorites
+                loadFavorites()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMy = "Failed to update favorite: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * Check if subreddit is favorited
+     */
+    fun isFavorited(subredditId: String): Boolean {
+        return _favoriteSubreddits.value.contains(subredditId)
     }
 
     /**
@@ -72,7 +129,6 @@ class SubredditListViewModel @Inject constructor(
             )
 
             try {
-                // useCache=true by default, set to false for force refresh
                 val response = repository.getMySubscribedSubreddits(
                     after = null,
                     limit = 100,
@@ -290,6 +346,7 @@ class SubredditListViewModel @Inject constructor(
     fun refreshAll() {
         if (profileManager.isLoggedIn()) {
             refreshMySubscriptions()
+            loadFavorites()
         }
         loadPopularSubreddits(forceRefresh = true)
     }

@@ -3,7 +3,7 @@ package com.hamburghini.cosmos.util
 import android.util.Log
 
 object Logger {
-    private const val TAG = "SignageBoardApp"
+    private const val TAG = "CosmosApp"
 
     enum class Severity {
         VERBOSE, DEBUG, INFO, WARNING, ERROR
