@@ -153,11 +153,11 @@ fun PostCard(
                 PostType.LINK -> PostLinkContent(post)
                 PostType.GALLERY -> PostGalleryContent(
                     post = post,
-                    onGalleryClick = {
+                    onGalleryClick = { index ->
                         // Launch photo viewer for gallery
                         val imageUrls = PhotoViewerUtils.extractImageUrls(post)
                         if (imageUrls.isNotEmpty()) {
-                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, index)
                         }
                     }
                 )
@@ -339,36 +339,14 @@ private fun PostLinkContent(post: Post) {
 @Composable
 private fun PostGalleryContent(
     post: Post,
-    onGalleryClick: () -> Unit
+    onGalleryClick: (Int) -> Unit
 ) {
-    val imageCount = post.gallery_data?.items?.size ?: 0
+    val imageUrls = PhotoViewerUtils.extractImageUrls(post)
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { onGalleryClick() }
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(8.dp)
-            )
-            .padding(12.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Image,
-            contentDescription = "Gallery post",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Text(
-            text = "Gallery ($imageCount images)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium
-        )
-    }
+    PostImagePreview(
+        imageUrls = imageUrls,
+        onClick = onGalleryClick
+    )
 }
 
 @Composable

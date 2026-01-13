@@ -41,14 +41,17 @@ object PhotoViewerUtils {
     fun extractImageUrls(post: Post): List<String> {
         val imageUrls = mutableListOf<String>()
 
+        Logger.i("extractImageUrls: ${post.title}")
         // Handle gallery posts
         if (post.is_gallery == true && post.gallery_data != null && post.media_metadata != null) {
             post.gallery_data.items.forEach { galleryItem ->
                 post.media_metadata[galleryItem.mediaId]?.let { metadata ->
-                    val imageUrl = metadata.mediaSource.url
-                        .replace("&amp;", "&")
-                        .replace("preview.redd.it", "i.redd.it")
-                    imageUrls.add(imageUrl)
+                    (metadata.mediaSource.url ?: metadata.mediaSource.gif)?.let { url ->
+                        val imageUrl = url
+                            .replace("&amp;", "&")
+                            .replace("preview.redd.it", "i.redd.it")
+                        imageUrls.add(imageUrl)
+                    }
                 }
             }
         }

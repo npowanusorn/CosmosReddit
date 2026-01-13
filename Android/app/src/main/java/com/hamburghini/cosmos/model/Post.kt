@@ -171,7 +171,9 @@ data class MediaMetadataItem(
 
 @Parcelize
 data class MediaSource(
-    @SerializedName("u") val url: String,
+    @SerializedName("u") val url: String?,
     @SerializedName("x") val width: Int,
-    @SerializedName("y") val height: Int
+    @SerializedName("y") val height: Int,
+    @SerializedName("gif") val gif: String?,
+    @SerializedName("mp4") val mp4: String?,
 ) : Parcelable
