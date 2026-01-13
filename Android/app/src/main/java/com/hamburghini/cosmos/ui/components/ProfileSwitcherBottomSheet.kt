@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
@@ -59,6 +60,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
@@ -178,28 +181,10 @@ private fun ProfileSwitcherContent(
             .padding(bottom = 16.dp)
     ) {
         // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Switch Account",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            // Show loading indicator in header when switching
-            if (isSwitchingAccount) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
-                    color = RedditOrange
-                )
-            }
-        }
+        ProfileSwitcherHeader(
+            isSwitchingAccount = isSwitchingAccount,
+            onAddAccountClick = onAddAccountClick
+        )
 
         // Loading bar
         AnimatedVisibility(
@@ -282,19 +267,44 @@ private fun ProfileSwitcherContent(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
 
-        // Add Account Button
-        if (hasContent) {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-        }
-
-        AddAccountButton(
-            onClick = onAddAccountClick,
-            enabled = !isSwitchingAccount,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+@Composable
+private fun ProfileSwitcherHeader(
+    isSwitchingAccount: Boolean,
+    onAddAccountClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Accounts",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
         )
+
+        // Show loading indicator in header when switching
+        if (isSwitchingAccount) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp,
+                color = RedditOrange
+            )
+        } else {
+            IconButton(
+                onClick = onAddAccountClick
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null
+                )
+            }
+        }
     }
 }
 
@@ -601,61 +611,11 @@ private fun AccountListItem(
     }
 }
 
+@Preview
 @Composable
-private fun AddAccountButton(
-    onClick: () -> Unit,
-    enabled: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val alpha by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.5f,
-        animationSpec = tween(300),
-        label = "alphaAnimation"
+fun PreviewProfileSwitcherHeader() {
+    ProfileSwitcherHeader(
+        isSwitchingAccount = false,
+        onAddAccountClick = {}
     )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .alpha(alpha)
-            .padding(vertical = 12.dp, horizontal = 20.dp),
-        enabled = enabled,
-        onClick = onClick
-    ) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .alpha(alpha),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PersonAdd,
-                    contentDescription = "Add account",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Column {
-                Text(
-                    text = "Add Account",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Text(
-                    text = "Log in with another Reddit account",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
 }
