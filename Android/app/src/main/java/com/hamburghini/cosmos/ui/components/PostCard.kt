@@ -1,5 +1,7 @@
 package com.hamburghini.cosmos.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -37,8 +39,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -355,53 +359,81 @@ private fun PostFooter(
     onDownvote: () -> Unit,
     onMenuClick: (Post) -> Unit
 ) {
+    val targetColor = when (voteState) {
+        true -> UpvoteColor.copy(alpha = 0.35f)
+        false -> DownvoteColor.copy(alpha = 0.35f)
+        null -> MaterialTheme.colorScheme.surface
+    }
+
+    val animatedBackground by animateColorAsState(
+        targetValue = targetColor,
+        animationSpec = tween(durationMillis = 500),
+        label = "VoteBackground"
+    )
+
+    val hapticFeedback = LocalHapticFeedback.current
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Voting controls
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            IconButton(
-                onClick = onUpvote,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowUp,
-                    contentDescription = "Upvote",
-                    tint = when (voteState) {
-                        true -> UpvoteColor
-                        else -> NeutralColor
-                    }
-                )
-            }
-
-            Text(
-                text = PostUtils.formatScore(currentScore),
-                style = MaterialTheme.typography.labelMedium,
-                color = when (voteState) {
-                    true -> UpvoteColor
-                    false -> DownvoteColor
-                    null -> NeutralColor
-                },
-                fontWeight = FontWeight.Medium
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = animatedBackground
             )
-
-            IconButton(
-                onClick = onDownvote,
-                modifier = Modifier.size(32.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Downvote",
-                    tint = when (voteState) {
+                IconButton(
+                    onClick = {
+                        onUpvote()
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Upvote",
+                        tint = when (voteState) {
+                            true -> UpvoteColor
+                            else -> NeutralColor
+                        }
+                    )
+                }
+
+                Text(
+                    text = PostUtils.formatScore(currentScore),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = when (voteState) {
+                        true -> UpvoteColor
                         false -> DownvoteColor
-                        else -> NeutralColor
-                    }
+                        null -> NeutralColor
+                    },
+                    fontWeight = FontWeight.Medium
                 )
+
+                IconButton(
+                    onClick = {
+                        onDownvote()
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Downvote",
+                        tint = when (voteState) {
+                            false -> DownvoteColor
+                            else -> NeutralColor
+                        }
+                    )
+                }
             }
         }
 
@@ -446,6 +478,6 @@ private fun PostFooter(
 @Composable
 fun PreviewPostCard() {
     PostCard(
-        post = Post.mock
+        post = Post.mock.copy(likes = true)
     )
 }

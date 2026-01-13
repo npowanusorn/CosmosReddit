@@ -70,6 +70,7 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-gif:3.3.0")
 
     implementation(libs.hilt.android)
+    implementation(libs.androidx.compose.animation.core)
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
