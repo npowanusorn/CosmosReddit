@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,12 +23,14 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
@@ -344,10 +349,58 @@ private fun PostGalleryContent(
 ) {
     val imageUrls = PhotoViewerUtils.extractImageUrls(post)
 
-    ImagePreviewGrid(
-        imageUrls = imageUrls,
-        onClick = onGalleryClick
-    )
+    var revealed by remember { mutableStateOf(false) }
+    val isBlurred = (post.over_18 || post.spoiler == true) && !revealed
+
+    val shape = RoundedCornerShape(12.dp)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(shape)
+    ) {
+
+        ImagePreviewGrid(
+            imageUrls = imageUrls,
+            onClick = { index ->
+                if (isBlurred) {
+                    revealed = true
+                } else {
+                    onGalleryClick(index)
+                }
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(if (isBlurred) 32.dp else 0.dp)
+        )
+
+        if (isBlurred) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+            ) {
+                // Overlay content (no background)
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (post.over_18) "NSFW" else "Spoiler",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    TextButton(onClick = { revealed = true }) {
+                        Text("Tap to reveal", color = Color.White)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
