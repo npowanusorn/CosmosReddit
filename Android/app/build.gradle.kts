@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation("io.coil-kt.coil3:coil-gif:3.3.0")
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
@@ -75,6 +76,7 @@ dependencies {
     implementation("androidx.browser:browser:1.10.0-alpha02")
     implementation("androidx.webkit:webkit:1.15.0")
     implementation("androidx.security:security-crypto:1.1.0")
+
     implementation("net.engawapg.lib:zoomable:2.9.0")
 
     implementation(libs.androidx.navigation.compose)
