@@ -14,13 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -53,6 +50,7 @@ import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
 import com.hamburghini.cosmos.ui.theme.UpvoteColor
+import com.hamburghini.cosmos.util.Logger
 import com.hamburghini.cosmos.util.PhotoViewerUtils
 import com.hamburghini.cosmos.util.PostType
 import com.hamburghini.cosmos.util.PostUtils
@@ -63,7 +61,9 @@ fun PostCard(
     modifier: Modifier = Modifier,
     onPostClick: (Post) -> Unit = {},
     onVote: (String, Int) -> Unit = { _, _ -> },
-    onMenuClick: (Post) -> Unit = {}
+    onMenuClick: (Post) -> Unit = {},
+    onSubredditClick: (Post) -> Unit = {},
+    onAuthorClick: (Post) -> Unit = {}
 ) {
     var currentScore by remember { mutableIntStateOf(post.score) }
     var voteState by remember { mutableStateOf(post.likes) } // null = no vote, true = upvoted, false = downvoted
@@ -109,7 +109,11 @@ fun PostCard(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Header with subreddit and author info
-            PostHeader(post = post)
+            PostHeader(
+                post = post,
+                onSubredditClick = onSubredditClick,
+                onAuthorClick = onAuthorClick
+            )
 
             // Title
             Text(
@@ -138,9 +142,9 @@ fun PostCard(
 
             // Content based on post type
             when (postType) {
-                PostType.IMAGE -> PostImageContent(
+                PostType.IMAGE -> PostGalleryContent(
                     post = post,
-                    onImageClick = {
+                    onGalleryClick = {
                         // Launch photo viewer for single image
                         val imageUrls = PhotoViewerUtils.extractImageUrls(post)
                         if (imageUrls.isNotEmpty()) {
@@ -200,7 +204,11 @@ fun PostCard(
 }
 
 @Composable
-private fun PostHeader(post: Post) {
+private fun PostHeader(
+    post: Post,
+    onSubredditClick: (Post) -> Unit = {},
+    onAuthorClick: (Post) -> Unit = {}
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -214,7 +222,12 @@ private fun PostHeader(post: Post) {
                 text = post.subreddit_name_prefixed,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { onSubredditClick(post) }
+                    .padding(vertical = 2.dp, horizontal = 4.dp)
+
             )
             Text(
                 text = "•",
@@ -224,7 +237,11 @@ private fun PostHeader(post: Post) {
             Text(
                 text = "u/${post.author}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { onAuthorClick(post) }
+                    .padding(vertical = 2.dp, horizontal = 4.dp)
             )
         }
 
@@ -232,26 +249,6 @@ private fun PostHeader(post: Post) {
             text = PostUtils.formatTimeAgo(post.created_utc),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun PostImageContent(
-    post: Post,
-    onImageClick: () -> Unit
-) {
-    PostUtils.getImageUrl(post)?.let { imageUrl ->
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = "Post image",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable { onImageClick() },
-            contentScale = ContentScale.Crop,
-            error = painterResource(R.drawable.ic_launcher_background)
         )
     }
 }
@@ -343,7 +340,7 @@ private fun PostGalleryContent(
 ) {
     val imageUrls = PhotoViewerUtils.extractImageUrls(post)
 
-    PostImagePreview(
+    ImagePreviewGrid(
         imageUrls = imageUrls,
         onClick = onGalleryClick
     )

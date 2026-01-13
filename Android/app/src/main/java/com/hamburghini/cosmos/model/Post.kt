@@ -62,7 +62,7 @@ data class Post(
             likes = null,
             saved = true,
             preview = null,
-            post_hint = "image",
+            post_hint = "text",
             is_self = false,
             media = null,
             secure_media = null,

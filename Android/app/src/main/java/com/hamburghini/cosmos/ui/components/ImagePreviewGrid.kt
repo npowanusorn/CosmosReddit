@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +29,7 @@ import coil3.compose.AsyncImage
 import coil3.decode.BitmapFactoryDecoder
 
 @Composable
-fun PostImagePreview(
+fun ImagePreviewGrid(
     imageUrls: List<String>,
     modifier: Modifier = Modifier,
     onClick: (Int) -> Unit = {}
@@ -53,7 +52,6 @@ private fun OneImage(
         contentDescription = null,
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = { onClick(0) }),
         contentScale = ContentScale.Crop

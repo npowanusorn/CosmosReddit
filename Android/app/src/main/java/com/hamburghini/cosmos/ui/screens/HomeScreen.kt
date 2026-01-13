@@ -64,6 +64,7 @@ import com.hamburghini.cosmos.ui.activity.PostDetailActivity
 import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
+import com.hamburghini.cosmos.util.Logger
 import com.hamburghini.cosmos.viewmodel.HomeViewModel
 import com.hamburghini.cosmos.viewmodel.SortType
 import kotlinx.coroutines.launch
@@ -160,6 +161,12 @@ fun HomeScreen(
                             onMenuClick = { clickedPost ->
                                 selectedPost = clickedPost
                                 showPostMenu = true
+                            },
+                            onSubredditClick = { post ->
+                                Logger.i("onSubredditClick: ${post.subreddit_id}")
+                            },
+                            onAuthorClick = { post ->
+                                Logger.i("onAuthorClick: ${post.author}")
                             }
                         )
                     }
