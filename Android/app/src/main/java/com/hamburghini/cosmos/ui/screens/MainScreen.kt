@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,7 +36,8 @@ import com.hamburghini.cosmos.viewmodel.ProfileViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    onLoginClick: () -> Unit
+    onLoginClick: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     var currentTab by remember { mutableStateOf(BottomNavDestination.HOME) }
     val profileViewModel: ProfileViewModel = hiltViewModel()
@@ -67,31 +69,44 @@ fun MainScreen(
                 title = currentTitle,
                 showLogo = currentTab == BottomNavDestination.HOME,
                 actions = {
-                    // Search button
-                    IconButton(onClick = {
-                        println("onSearchClick")
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    // Notifications button
-                    IconButton(onClick = {
-                        if (authState is AuthState.LoggedIn) {
-                            println("onNotificationClick for user: ${(authState as AuthState.LoggedIn).account.username}")
-                        } else {
-                            println("Notifications require login")
-                            // Could show a login prompt here
+                    if (currentTab == BottomNavDestination.PROFILE) {
+                        IconButton(onClick = {
+                            println("onSettingsClick")
+                            onSettingsClick()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = stringResource(R.string.settings),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = stringResource(R.string.notifications),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                    } else {
+                        // Search button
+                        IconButton(onClick = {
+                            println("onSearchClick")
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Notifications button
+                        IconButton(onClick = {
+                            if (authState is AuthState.LoggedIn) {
+                                println("onNotificationClick for user: ${(authState as AuthState.LoggedIn).account.username}")
+                            } else {
+                                println("Notifications require login")
+                                // Could show a login prompt here
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = stringResource(R.string.notifications),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))

@@ -61,6 +61,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.Constants
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.ui.activity.PostDetailActivity
+import com.hamburghini.cosmos.ui.activity.VideoPlayerActivity
 import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
@@ -147,7 +148,6 @@ fun HomeScreen(
                         PostCard(
                             post = post,
                             onPostClick = { clickedPost ->
-                                // TODO: Navigate to post detail
                                 println("Post clicked: ${clickedPost.title}")
                                 context.startActivity(
                                     Intent(context, PostDetailActivity::class.java).apply {
@@ -167,6 +167,17 @@ fun HomeScreen(
                             },
                             onAuthorClick = { post ->
                                 Logger.i("onAuthorClick: ${post.author}")
+                            },
+                            onVideoClick = {
+                                val videoUrl = post.preview?.videoPreview?.dashUrl
+                                Logger.i("videoUrl: $videoUrl")
+                                if (!videoUrl.isNullOrEmpty()) {
+                                    context.startActivity(
+                                        Intent(context, VideoPlayerActivity::class.java).apply {
+                                            putExtra(Constants.VIDEO_CLICKED_PARCELABLE, videoUrl)
+                                        }
+                                    )
+                                }
                             }
                         )
                     }

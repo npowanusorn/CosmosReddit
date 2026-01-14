@@ -50,6 +50,8 @@ android {
     }
 }
 
+val PLAYERPLUS_VER = "0.0.31"
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -67,18 +69,20 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
-    implementation("io.coil-kt.coil3:coil-gif:3.3.0")
+    implementation(libs.coil.gif)
 
     implementation(libs.hilt.android)
     implementation(libs.androidx.compose.animation.core)
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
-    implementation("androidx.browser:browser:1.10.0-alpha02")
-    implementation("androidx.webkit:webkit:1.15.0")
-    implementation("androidx.security:security-crypto:1.1.0")
+    implementation(libs.androidx.browser)
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.security.crypto)
 
-    implementation("net.engawapg.lib:zoomable:2.9.0")
+    implementation(libs.zoomable)
+
+    implementation("com.hamburghini.playerplus:playerplus:${PLAYERPLUS_VER}")
 
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)

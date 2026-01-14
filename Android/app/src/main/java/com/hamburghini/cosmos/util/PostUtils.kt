@@ -45,11 +45,29 @@ object PostUtils {
 
     fun getPostType(post: Post): PostType {
         return when {
+            // 1. Galleries (Multiple images)
             post.is_gallery == true -> PostType.GALLERY
-            post.post_hint == "image" -> PostType.IMAGE
-            post.post_hint == "hosted:video" || post.media?.reddit_video != null -> PostType.VIDEO
-            post.post_hint == "link" -> PostType.LINK
-            post.is_self -> PostType.TEXT
+
+            // 2. Video (Internal and External)
+            // rich:video covers YouTube, Vimeo, etc.
+            post.post_hint == "hosted:video" ||
+                    post.post_hint == "rich:video" ||
+                    post.media?.reddit_video != null -> PostType.VIDEO
+
+            // 3. Images
+            // Sometimes hint is missing, so we check the URL extension as a fallback
+            post.post_hint == "image" || post.url.contains(Regex("\\.(jpg|jpeg|png|gif)$", RegexOption.IGNORE_CASE)) -> PostType.IMAGE
+
+            // 4. Polls (Reddit-specific)
+//            post.poll_data != null -> PostType.POLL
+
+            // 5. Self-posts (Text)
+            // Check is_self or if it's a "self" hint
+            post.is_self || post.post_hint == "self" -> PostType.TEXT
+
+            // 6. Links
+            post.post_hint == "link" || post.url.isNotEmpty() -> PostType.LINK
+
             else -> PostType.UNKNOWN
         }
     }
@@ -59,14 +77,14 @@ object PostUtils {
         return post.preview?.images?.firstOrNull()?.source?.url?.replace("&amp;", "&")
     }
 
-    fun getThumbnailUrl(post: Post): String? {
-        return when {
-            post.thumbnail?.startsWith("http") == true -> post.thumbnail
-            post.preview?.images?.firstOrNull()?.resolutions?.lastOrNull()?.url != null -> {
-                post.preview.images.first().resolutions?.last()?.url?.replace("&amp;", "&")
-            }
-            else -> null
-        }
+    fun getThumbnailUrl(post: Post): Pair<String, Float>? {
+        val source = post.preview?.images?.firstOrNull()?.source ?: return null
+        val url = source.url.replace("&amp;", "&")
+        val width = source.width
+        val height = source.height
+        val aspectRatio = width.toFloat() / height.toFloat()
+        Logger.i("url: $url")
+        return Pair(url, aspectRatio)
     }
 
     fun getVideoUrl(post: Post): String? {

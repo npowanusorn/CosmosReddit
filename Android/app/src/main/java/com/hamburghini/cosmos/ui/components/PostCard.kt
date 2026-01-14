@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -72,7 +73,8 @@ fun PostCard(
     onVote: (String, Int) -> Unit = { _, _ -> },
     onMenuClick: (Post) -> Unit = {},
     onSubredditClick: (Post) -> Unit = {},
-    onAuthorClick: (Post) -> Unit = {}
+    onAuthorClick: (Post) -> Unit = {},
+    onVideoClick: () -> Unit = {}
 ) {
     var currentScore by remember { mutableIntStateOf(post.score) }
     var voteState by remember { mutableStateOf(post.likes) } // null = no vote, true = upvoted, false = downvoted
@@ -100,7 +102,7 @@ fun PostCard(
                         close()
                     }
 
-                    drawPath(path, Color(0,200,0))
+                    drawPath(path, Color(0, 200, 0))
                 }
             },
         colors = CardDefaults.cardColors(
@@ -161,7 +163,10 @@ fun PostCard(
                         }
                     }
                 )
-                PostType.VIDEO -> PostVideoContent(post)
+                PostType.VIDEO -> PostVideoContent(
+                    post = post,
+                    onVideoClick = onVideoClick
+                )
                 PostType.TEXT -> PostTextContent(post)
                 PostType.LINK -> PostLinkContent(post)
                 PostType.GALLERY -> PostGalleryContent(
@@ -263,38 +268,45 @@ private fun PostHeader(
 }
 
 @Composable
-private fun PostVideoContent(post: Post) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.Black),
-        contentAlignment = Alignment.Center
-    ) {
-        // Thumbnail
-        PostUtils.getThumbnailUrl(post)?.let { thumbnailUrl ->
+private fun PostVideoContent(
+    post: Post,
+    onVideoClick: () -> Unit
+) {
+    PostUtils.getThumbnailUrl(post)?.let { pair ->
+        val thumbnailUrl = pair.first
+        val aspectRatio = pair.second
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .aspectRatio(aspectRatio)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black)
+                .clickable(onClick = { onVideoClick() }),
+            contentAlignment = Alignment.Center
+        ) {
+            // Thumbnail
             AsyncImage(
                 model = thumbnailUrl,
                 contentDescription = "Video thumbnail",
                 modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.FillHeight
+            )
+
+            // Play button overlay
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Play video",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        Color.Black.copy(alpha = 0.6f),
+                        RoundedCornerShape(24.dp)
+                    )
+                    .padding(12.dp)
             )
         }
-
-        // Play button overlay
-        Icon(
-            imageVector = Icons.Default.PlayArrow,
-            contentDescription = "Play video",
-            tint = Color.White,
-            modifier = Modifier
-                .size(48.dp)
-                .background(
-                    Color.Black.copy(alpha = 0.6f),
-                    RoundedCornerShape(24.dp)
-                )
-                .padding(12.dp)
-        )
     }
 }
 

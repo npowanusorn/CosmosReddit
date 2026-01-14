@@ -86,7 +86,8 @@ data class Post(
 @Parcelize
 data class Preview(
     @SerializedName("images") val images: List<Image>?,
-    @SerializedName("enabled") val enabled: Boolean?
+    @SerializedName("enabled") val enabled: Boolean?,
+    @SerializedName("reddit_video_preview") val videoPreview: RedditVideoPreview?
 ) : Parcelable
 
 @Parcelize
@@ -94,6 +95,21 @@ data class Image(
     @SerializedName("source") val source: Source?,
     @SerializedName("resolutions") val resolutions: List<Source>?,
     @SerializedName("id") val id: String?
+) : Parcelable
+
+@Parcelize
+data class RedditVideoPreview(
+    @SerializedName("bitrate_kbps") val bitrateKbps: Int?,
+    @SerializedName("fallback_url") val fallbackUrl: String?,
+    @SerializedName("has_audio") val hasAudio: Boolean,
+    @SerializedName("height") val height: Int,
+    @SerializedName("width") val width: Int,
+    @SerializedName("scrubber_media_url") val scrubberMediaUrl: String?,
+    @SerializedName("dash_url") val dashUrl: String?,
+    @SerializedName("duration") val duration: Int,
+    @SerializedName("hls_url") val hlsUrl: String?,
+    @SerializedName("is_gif") val isGif: Boolean,
+    @SerializedName("transcoding_status") val transcodingStatus: String?
 ) : Parcelable
 
 @Parcelize

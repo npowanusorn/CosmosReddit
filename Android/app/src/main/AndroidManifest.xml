@@ -18,6 +18,16 @@
         android:theme="@style/Theme.Cosmos"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".ui.activity.VideoPlayerActivity"
+            android:exported="false"
+            android:label="@string/title_activity_video_player"
+            android:theme="@style/Theme.Cosmos" />
+        <activity
+            android:name=".ui.activity.SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_settings"
+            android:theme="@style/Theme.Cosmos" />
+        <activity
             android:name=".ui.activity.PostDetailActivity"
             android:exported="false"
             android:label="@string/title_activity_post_detail"

@@ -41,7 +41,8 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MainScreen(
-                        onLoginClick = { handleLogin() }
+                        onLoginClick = { handleLogin() },
+                        onSettingsClick = { handleSettings() }
                     )
                 }
             }
@@ -83,5 +84,10 @@ class MainActivity : ComponentActivity() {
      */
     private fun handleLogin() {
         profileManager.startLogin(this)
+    }
+
+    private fun handleSettings() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        startActivity(intent)
     }
 }
