@@ -4,6 +4,7 @@ browser = "1.10.0-alpha02"
 coilCompose = "3.3.0"
 coilNetworkOkhttp = "3.3.0"
 converterGson = "3.0.0"
+firebaseBom = "34.7.0"
 gson = "2.13.2"
 hiltAndroid = "2.57.2"
 hiltCompiler = "2.57.2"
@@ -35,6 +36,9 @@ androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilNetworkOkhttp" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hiltCompiler" }

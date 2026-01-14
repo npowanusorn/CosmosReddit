@@ -5,6 +5,8 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("kotlin-parcelize")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -83,6 +85,11 @@ dependencies {
     implementation(libs.zoomable)
 
     implementation("com.hamburghini.playerplus:playerplus:${PLAYERPLUS_VER}")
+
+    // firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
