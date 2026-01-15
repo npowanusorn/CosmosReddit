@@ -18,9 +18,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.core.constants.Constants
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
-import com.hamburghini.cosmos.ui.screens.PostDetailScreen
+import com.hamburghini.cosmos.ui.screens.postdetail.PostDetailScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
-import com.hamburghini.cosmos.viewmodel.PostDetailViewModel
+import com.hamburghini.cosmos.ui.screens.postdetail.PostDetailViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

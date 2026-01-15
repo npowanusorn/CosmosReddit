@@ -2,10 +2,10 @@ package com.hamburghini.cosmos.core.di
 
 import android.content.Context
 import com.hamburghini.cosmos.core.auth.RedditAuthManager
-import com.hamburghini.cosmos.manager.FavoritesManager
-import com.hamburghini.cosmos.manager.ProfileManager
-import com.hamburghini.cosmos.manager.SubscriptionCacheManager
-import com.hamburghini.cosmos.repository.RedditRepository
+import com.hamburghini.cosmos.data.manager.FavoritesManager
+import com.hamburghini.cosmos.data.manager.ProfileManager
+import com.hamburghini.cosmos.data.manager.SubscriptionCacheManager
+import com.hamburghini.cosmos.data.repository.RedditRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

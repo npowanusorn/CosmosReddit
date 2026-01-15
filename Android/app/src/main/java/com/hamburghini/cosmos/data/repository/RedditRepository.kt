@@ -1,8 +1,8 @@
-package com.hamburghini.cosmos.repository
+package com.hamburghini.cosmos.data.repository
 
 import android.util.Log
-import com.hamburghini.cosmos.manager.ProfileManager
-import com.hamburghini.cosmos.manager.SubscriptionCacheManager
+import com.hamburghini.cosmos.data.manager.ProfileManager
+import com.hamburghini.cosmos.data.manager.SubscriptionCacheManager
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.model.RedditListingData
 import com.hamburghini.cosmos.model.RedditListingResponse

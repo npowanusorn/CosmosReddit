@@ -31,7 +31,11 @@ import com.hamburghini.cosmos.core.navigation.BottomNavDestination
 import com.hamburghini.cosmos.ui.components.CustomBottomTabBar
 import com.hamburghini.cosmos.ui.components.ProfileSwitcherBottomSheet
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
-import com.hamburghini.cosmos.viewmodel.ProfileViewModel
+import com.hamburghini.cosmos.ui.screens.chat.ChatScreen
+import com.hamburghini.cosmos.ui.screens.home.HomeScreen
+import com.hamburghini.cosmos.ui.screens.profile.ProfileScreen
+import com.hamburghini.cosmos.ui.screens.subredditlist.SubredditListScreen
+import com.hamburghini.cosmos.ui.screens.profile.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

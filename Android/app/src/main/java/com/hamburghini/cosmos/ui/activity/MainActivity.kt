@@ -11,7 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.hamburghini.cosmos.core.auth.RedditAuthManager
-import com.hamburghini.cosmos.manager.ProfileManager
+import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.ui.screens.MainScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
 import dagger.hilt.android.AndroidEntryPoint

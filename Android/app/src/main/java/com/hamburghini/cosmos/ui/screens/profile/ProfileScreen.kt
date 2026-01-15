@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.ui.screens
+package com.hamburghini.cosmos.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +43,7 @@ import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.PostUtils
-import com.hamburghini.cosmos.viewmodel.ProfileViewModel
+import com.hamburghini.cosmos.model.RedditAccount
 
 @Composable
 fun ProfileScreen(
@@ -241,7 +241,7 @@ private fun LoggingInHeader() {
 private fun LoggedInHeader(
     authState: AuthState.LoggedIn,
     onLogoutClick: () -> Unit,
-    onSwitchAccount: (com.hamburghini.cosmos.model.RedditAccount) -> Unit
+    onSwitchAccount: (RedditAccount) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -370,10 +370,10 @@ private fun AuthErrorHeader(
 
 @Composable
 private fun StoredAccountsSection(
-    accounts: List<com.hamburghini.cosmos.model.RedditAccount>,
-    currentAccount: com.hamburghini.cosmos.model.RedditAccount?,
-    onSwitchAccount: (com.hamburghini.cosmos.model.RedditAccount) -> Unit,
-    onRemoveAccount: (com.hamburghini.cosmos.model.RedditAccount) -> Unit
+    accounts: List<RedditAccount>,
+    currentAccount: RedditAccount?,
+    onSwitchAccount: (RedditAccount) -> Unit,
+    onRemoveAccount: (RedditAccount) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -397,7 +397,7 @@ private fun StoredAccountsSection(
 
 @Composable
 private fun AccountCard(
-    account: com.hamburghini.cosmos.model.RedditAccount,
+    account: RedditAccount,
     isActive: Boolean,
     onSwitchClick: () -> Unit,
     onRemoveClick: () -> Unit

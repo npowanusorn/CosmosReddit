@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.manager
+package com.hamburghini.cosmos.data.manager
 
 import android.content.Context
 import android.util.Log

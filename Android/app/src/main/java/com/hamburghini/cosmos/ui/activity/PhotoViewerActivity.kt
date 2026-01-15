@@ -1,20 +1,14 @@
 package com.hamburghini.cosmos.ui.activity
 
 import android.os.Bundle
-import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import com.hamburghini.cosmos.ui.screens.PhotoViewerScreen
+import com.hamburghini.cosmos.ui.screens.photoviewer.PhotoViewerScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
 import dagger.hilt.android.AndroidEntryPoint
 

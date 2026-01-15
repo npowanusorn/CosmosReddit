@@ -1,12 +1,12 @@
-package com.hamburghini.cosmos.viewmodel
+package com.hamburghini.cosmos.ui.screens.subredditlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hamburghini.cosmos.manager.FavoritesManager
-import com.hamburghini.cosmos.manager.ProfileManager
+import com.hamburghini.cosmos.data.manager.FavoritesManager
+import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.SubredditAboutData
-import com.hamburghini.cosmos.repository.RedditRepository
+import com.hamburghini.cosmos.data.repository.RedditRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

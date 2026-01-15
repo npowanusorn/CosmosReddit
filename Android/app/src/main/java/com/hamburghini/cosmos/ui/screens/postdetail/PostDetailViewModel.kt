@@ -1,14 +1,10 @@
-package com.hamburghini.cosmos.viewmodel
+package com.hamburghini.cosmos.ui.screens.postdetail
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.model.Post
-import com.hamburghini.cosmos.repository.RedditRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 @HiltViewModel

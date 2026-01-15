@@ -67,7 +67,7 @@ import com.hamburghini.cosmos.model.RedditAccount
 import com.hamburghini.cosmos.model.UserInfo
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.AccountUtils
-import com.hamburghini.cosmos.viewmodel.ProfileViewModel
+import com.hamburghini.cosmos.ui.screens.profile.ProfileViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

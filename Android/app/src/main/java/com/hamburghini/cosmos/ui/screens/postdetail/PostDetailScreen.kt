@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.ui.screens
+package com.hamburghini.cosmos.ui.screens.postdetail
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -62,7 +62,6 @@ import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PhotoViewerUtils
 import com.hamburghini.cosmos.core.util.PostType
 import com.hamburghini.cosmos.core.util.PostUtils
-import com.hamburghini.cosmos.viewmodel.PostDetailViewModel
 
 @Composable
 fun PostDetailScreen(

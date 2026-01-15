@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.ui.screens
+package com.hamburghini.cosmos.ui.screens.videoplayer
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +25,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.hamburghini.cosmos.viewmodel.VideoPlayerViewModel
 import com.hamburghini.playerplus.player.AbstractPlayerListener
 import com.hamburghini.playerplus.player.PlayerController
 import com.hamburghini.playerplus.player.PlayerView
@@ -36,7 +35,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
-import com.hamburghini.cosmos.viewmodel.SeekEvent
 
 @Composable
 fun VideoPlayerScreen(

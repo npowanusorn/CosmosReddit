@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.manager
+package com.hamburghini.cosmos.data.manager
 
 import android.app.Activity
 import android.content.Context
@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.content.edit
+import okhttp3.Interceptor
 
 /**
  * Enhanced ProfileManager with subscription cache integration
@@ -293,7 +294,7 @@ class ProfileManager @Inject constructor(
     }
 
     private fun createAuthenticatedApiService(accessToken: String): RedditApiService {
-        val authInterceptor = okhttp3.Interceptor { chain ->
+        val authInterceptor = Interceptor { chain ->
             val originalRequest = chain.request()
             val newRequest = originalRequest.newBuilder()
                 .header("Authorization", "Bearer $accessToken")

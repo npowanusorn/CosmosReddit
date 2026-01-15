@@ -1,11 +1,12 @@
-package com.hamburghini.cosmos.viewmodel
+package com.hamburghini.cosmos.ui.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hamburghini.cosmos.manager.ProfileManager
+import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.RedditAccount
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,7 +53,7 @@ class ProfileViewModel @Inject constructor(
                 profileManager.switchAccount(account)
 
                 // Wait a moment to ensure state is updated
-                kotlinx.coroutines.delay(300)
+                delay(300)
 
                 // Check if switch was successful
                 if (authState.value !is AuthState.LoggedIn ||

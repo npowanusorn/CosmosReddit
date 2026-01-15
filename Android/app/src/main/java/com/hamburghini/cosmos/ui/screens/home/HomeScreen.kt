@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.ui.screens
+package com.hamburghini.cosmos.ui.screens.home
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -62,8 +62,6 @@ import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.Logger
-import com.hamburghini.cosmos.viewmodel.HomeViewModel
-import com.hamburghini.cosmos.viewmodel.SortType
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

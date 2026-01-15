@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.ui.screens
+package com.hamburghini.cosmos.ui.screens.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,8 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Message
-import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.ui.theme.RedditOrange
-import com.hamburghini.cosmos.viewmodel.ProfileViewModel
+import com.hamburghini.cosmos.ui.screens.profile.ProfileViewModel
 
 @Composable
 fun ChatScreen(
