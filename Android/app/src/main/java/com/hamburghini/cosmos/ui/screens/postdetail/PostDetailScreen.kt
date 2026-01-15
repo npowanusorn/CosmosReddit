@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.R
-import com.hamburghini.cosmos.model.Post
+import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
 import com.hamburghini.cosmos.ui.theme.UpvoteColor

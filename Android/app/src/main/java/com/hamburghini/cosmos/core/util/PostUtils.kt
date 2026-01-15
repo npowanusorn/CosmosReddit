@@ -1,6 +1,6 @@
 package com.hamburghini.cosmos.core.util
 
-import com.hamburghini.cosmos.model.Post
+import com.hamburghini.cosmos.data.model.Post
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 

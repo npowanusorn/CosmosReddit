@@ -26,7 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.R
-import com.hamburghini.cosmos.model.AuthState
+import com.hamburghini.cosmos.data.model.AuthState
 import com.hamburghini.cosmos.core.navigation.BottomNavDestination
 import com.hamburghini.cosmos.ui.components.CustomBottomTabBar
 import com.hamburghini.cosmos.ui.components.ProfileSwitcherBottomSheet

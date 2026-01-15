@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.model
+package com.hamburghini.cosmos.data.model
 
 import android.os.Parcelable
 import com.google.gson.annotations.SerializedName

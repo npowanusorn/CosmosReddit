@@ -40,10 +40,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import com.hamburghini.cosmos.model.AuthState
+import com.hamburghini.cosmos.data.model.AuthState
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.PostUtils
-import com.hamburghini.cosmos.model.RedditAccount
+import com.hamburghini.cosmos.data.model.RedditAccount
 
 @Composable
 fun ProfileScreen(

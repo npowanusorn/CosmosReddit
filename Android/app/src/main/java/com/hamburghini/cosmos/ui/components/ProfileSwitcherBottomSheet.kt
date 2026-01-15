@@ -62,9 +62,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import com.hamburghini.cosmos.model.AuthState
-import com.hamburghini.cosmos.model.RedditAccount
-import com.hamburghini.cosmos.model.UserInfo
+import com.hamburghini.cosmos.data.model.AuthState
+import com.hamburghini.cosmos.data.model.RedditAccount
+import com.hamburghini.cosmos.data.model.UserInfo
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.AccountUtils
 import com.hamburghini.cosmos.ui.screens.profile.ProfileViewModel

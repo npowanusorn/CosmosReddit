@@ -5,7 +5,7 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import com.hamburghini.cosmos.model.SubredditAboutData
+import com.hamburghini.cosmos.data.model.SubredditAboutData
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

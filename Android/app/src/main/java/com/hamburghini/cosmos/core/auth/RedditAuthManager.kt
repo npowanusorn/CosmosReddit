@@ -10,8 +10,8 @@ import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
 import com.hamburghini.cosmos.core.constants.Constants
 import com.hamburghini.cosmos.data.manager.ProfileManager
-import com.hamburghini.cosmos.model.RedditAccount
-import com.hamburghini.cosmos.model.UserInfo
+import com.hamburghini.cosmos.data.model.RedditAccount
+import com.hamburghini.cosmos.data.model.UserInfo
 import com.hamburghini.cosmos.core.network.RedditApiService
 import com.hamburghini.cosmos.core.network.RetrofitClient
 import dagger.hilt.android.qualifiers.ApplicationContext

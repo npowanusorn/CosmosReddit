@@ -55,7 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.core.constants.Constants
-import com.hamburghini.cosmos.model.Post
+import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.activity.PostDetailActivity
 import com.hamburghini.cosmos.ui.activity.VideoPlayerActivity
 import com.hamburghini.cosmos.ui.components.PostCard

@@ -6,9 +6,9 @@ import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.hamburghini.cosmos.core.auth.RedditAuthManager
-import com.hamburghini.cosmos.model.AuthState
-import com.hamburghini.cosmos.model.RedditAccount
-import com.hamburghini.cosmos.model.UserInfo
+import com.hamburghini.cosmos.data.model.AuthState
+import com.hamburghini.cosmos.data.model.RedditAccount
+import com.hamburghini.cosmos.data.model.UserInfo
 import com.hamburghini.cosmos.core.network.RedditApiService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope

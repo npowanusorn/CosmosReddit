@@ -2,7 +2,7 @@ package com.hamburghini.cosmos.core.util
 
 import android.content.Context
 import android.content.Intent
-import com.hamburghini.cosmos.model.Post
+import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.activity.PhotoViewerActivity
 
 object PhotoViewerUtils {

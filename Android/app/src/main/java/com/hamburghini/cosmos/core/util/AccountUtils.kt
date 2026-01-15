@@ -1,7 +1,7 @@
 package com.hamburghini.cosmos.core.util
 
-import com.hamburghini.cosmos.model.RedditAccount
-import com.hamburghini.cosmos.model.UserInfo
+import com.hamburghini.cosmos.data.model.RedditAccount
+import com.hamburghini.cosmos.data.model.UserInfo
 import java.text.NumberFormat
 import java.util.Locale
 

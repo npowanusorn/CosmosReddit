@@ -3,8 +3,8 @@ package com.hamburghini.cosmos.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hamburghini.cosmos.data.manager.ProfileManager
-import com.hamburghini.cosmos.model.AuthState
-import com.hamburghini.cosmos.model.Post
+import com.hamburghini.cosmos.data.model.AuthState
+import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.repository.RedditRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

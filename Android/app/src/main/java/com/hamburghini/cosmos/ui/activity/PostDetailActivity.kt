@@ -16,7 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.core.constants.Constants
-import com.hamburghini.cosmos.model.Post
+import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
 import com.hamburghini.cosmos.ui.screens.postdetail.PostDetailScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme

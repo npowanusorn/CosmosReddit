@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.model
+package com.hamburghini.cosmos.data.model
 
 /**
  * Sealed class representing the different authentication states in the app
