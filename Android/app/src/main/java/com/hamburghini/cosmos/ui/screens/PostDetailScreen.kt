@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,16 +55,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.R
 import com.hamburghini.cosmos.model.Post
-import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
 import com.hamburghini.cosmos.ui.theme.UpvoteColor
-import com.hamburghini.cosmos.util.Logger
-import com.hamburghini.cosmos.util.PhotoViewerUtils
-import com.hamburghini.cosmos.util.PostType
-import com.hamburghini.cosmos.util.PostUtils
+import com.hamburghini.cosmos.core.util.Logger
+import com.hamburghini.cosmos.core.util.PhotoViewerUtils
+import com.hamburghini.cosmos.core.util.PostType
+import com.hamburghini.cosmos.core.util.PostUtils
 import com.hamburghini.cosmos.viewmodel.PostDetailViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun PostDetailScreen(

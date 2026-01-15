@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.util
+package com.hamburghini.cosmos.core.util
 
 import com.hamburghini.cosmos.model.Post
 import java.util.Locale

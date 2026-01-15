@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos
+package com.hamburghini.cosmos.core.constants
 
 object Constants {
     const val REDDIT_CLIENT_ID = "DYwlBxiztc_NidTFw-yRaQ"

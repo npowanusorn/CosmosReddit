@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.network
+package com.hamburghini.cosmos.core.network
 
 import com.hamburghini.cosmos.model.AccessTokenResponse
 import com.hamburghini.cosmos.model.Comment

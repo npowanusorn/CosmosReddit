@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.navigation
+package com.hamburghini.cosmos.core.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes

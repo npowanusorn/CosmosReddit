@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -49,21 +48,18 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.hamburghini.cosmos.R
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
 import com.hamburghini.cosmos.ui.theme.UpvoteColor
-import com.hamburghini.cosmos.util.Logger
-import com.hamburghini.cosmos.util.PhotoViewerUtils
-import com.hamburghini.cosmos.util.PostType
-import com.hamburghini.cosmos.util.PostUtils
+import com.hamburghini.cosmos.core.util.PhotoViewerUtils
+import com.hamburghini.cosmos.core.util.PostType
+import com.hamburghini.cosmos.core.util.PostUtils
 
 @Composable
 fun PostCard(

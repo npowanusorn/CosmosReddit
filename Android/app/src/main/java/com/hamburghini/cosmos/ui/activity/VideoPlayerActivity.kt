@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import com.hamburghini.cosmos.Constants
+import com.hamburghini.cosmos.core.constants.Constants
 import com.hamburghini.cosmos.model.Post
 import com.hamburghini.cosmos.ui.screens.VideoPlayerScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme

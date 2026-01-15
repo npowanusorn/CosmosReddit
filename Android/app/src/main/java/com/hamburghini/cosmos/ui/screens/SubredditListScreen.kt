@@ -64,10 +64,9 @@ import com.hamburghini.cosmos.R
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.SubredditAboutData
 import com.hamburghini.cosmos.ui.theme.RedditOrange
-import com.hamburghini.cosmos.util.Logger
+import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.viewmodel.SubredditListViewModel
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

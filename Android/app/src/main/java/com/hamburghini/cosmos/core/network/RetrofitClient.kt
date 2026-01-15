@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.network
+package com.hamburghini.cosmos.core.network
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

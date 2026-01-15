@@ -7,7 +7,6 @@ import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.model.SubredditAboutData
 import com.hamburghini.cosmos.repository.RedditRepository
-import com.hamburghini.cosmos.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

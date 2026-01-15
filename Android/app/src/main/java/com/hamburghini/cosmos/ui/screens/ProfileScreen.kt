@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Login
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,7 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.model.AuthState
 import com.hamburghini.cosmos.ui.theme.RedditOrange
-import com.hamburghini.cosmos.util.PostUtils
+import com.hamburghini.cosmos.core.util.PostUtils
 import com.hamburghini.cosmos.viewmodel.ProfileViewModel
 
 @Composable

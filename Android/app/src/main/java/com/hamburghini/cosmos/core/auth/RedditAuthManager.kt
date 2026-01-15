@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.auth
+package com.hamburghini.cosmos.core.auth
 
 import android.app.Activity
 import android.content.Context
@@ -8,13 +8,12 @@ import android.net.Uri
 import android.util.Base64
 import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
-import com.hamburghini.cosmos.Constants
+import com.hamburghini.cosmos.core.constants.Constants
 import com.hamburghini.cosmos.manager.ProfileManager
-import com.hamburghini.cosmos.model.AccessTokenResponse
 import com.hamburghini.cosmos.model.RedditAccount
 import com.hamburghini.cosmos.model.UserInfo
-import com.hamburghini.cosmos.network.RedditApiService
-import com.hamburghini.cosmos.network.RetrofitClient
+import com.hamburghini.cosmos.core.network.RedditApiService
+import com.hamburghini.cosmos.core.network.RetrofitClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,6 +26,9 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.net.toUri
+import okhttp3.Interceptor
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 @Singleton
 class RedditAuthManager @Inject constructor(
@@ -221,8 +223,8 @@ class RedditAuthManager @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Exception during token exchange", e)
             val userFriendlyMessage = when (e) {
-                is java.net.UnknownHostException -> "No internet connection - please check your network"
-                is java.net.SocketTimeoutException -> "Connection timeout - please try again"
+                is UnknownHostException -> "No internet connection - please check your network"
+                is SocketTimeoutException -> "Connection timeout - please try again"
                 else -> "Network error during authentication: ${e.message}"
             }
             AuthResult.Error(userFriendlyMessage)
@@ -317,7 +319,7 @@ class RedditAuthManager @Inject constructor(
      * Create authenticated API service
      */
     private fun createAuthenticatedApiService(accessToken: String): RedditApiService {
-        val authInterceptor = okhttp3.Interceptor { chain ->
+        val authInterceptor = Interceptor { chain ->
             val originalRequest = chain.request()
             val newRequest = originalRequest.newBuilder()
                 .header("Authorization", "Bearer $accessToken")

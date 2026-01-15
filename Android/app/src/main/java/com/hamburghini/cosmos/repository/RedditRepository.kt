@@ -9,7 +9,7 @@ import com.hamburghini.cosmos.model.RedditListingResponse
 import com.hamburghini.cosmos.model.RedditObject
 import com.hamburghini.cosmos.model.SubredditAbout
 import com.hamburghini.cosmos.model.SubredditAboutData
-import com.hamburghini.cosmos.network.RetrofitClient
+import com.hamburghini.cosmos.core.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody

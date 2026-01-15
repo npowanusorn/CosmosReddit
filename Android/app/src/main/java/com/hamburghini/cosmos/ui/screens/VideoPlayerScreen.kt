@@ -19,16 +19,13 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.hamburghini.cosmos.util.Logger
 import com.hamburghini.cosmos.viewmodel.VideoPlayerViewModel
-import com.hamburghini.playerplus.download.Downloader
 import com.hamburghini.playerplus.player.AbstractPlayerListener
 import com.hamburghini.playerplus.player.PlayerController
 import com.hamburghini.playerplus.player.PlayerView

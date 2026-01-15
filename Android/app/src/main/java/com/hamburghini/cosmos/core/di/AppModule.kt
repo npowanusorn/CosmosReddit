@@ -1,7 +1,7 @@
-package com.hamburghini.cosmos.di
+package com.hamburghini.cosmos.core.di
 
 import android.content.Context
-import com.hamburghini.cosmos.auth.RedditAuthManager
+import com.hamburghini.cosmos.core.auth.RedditAuthManager
 import com.hamburghini.cosmos.manager.FavoritesManager
 import com.hamburghini.cosmos.manager.ProfileManager
 import com.hamburghini.cosmos.manager.SubscriptionCacheManager
