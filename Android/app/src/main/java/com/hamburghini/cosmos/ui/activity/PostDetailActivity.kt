@@ -5,17 +5,22 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.core.constants.Constants
+import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
 import com.hamburghini.cosmos.ui.screens.postdetail.PostDetailScreen
@@ -55,6 +60,19 @@ class PostDetailActivity : ComponentActivity() {
                                         contentDescription = null,
                                     )
                                 }
+                            },
+                            actions = {
+                                IconButton(
+                                    onClick = {
+                                        Logger.i("post detail more icon tapped")
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = null
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
                             }
                         )
                     }

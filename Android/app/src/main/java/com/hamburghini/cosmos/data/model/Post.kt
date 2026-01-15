@@ -54,7 +54,7 @@ data class Post(
             score = 1243,
             num_comments = 187,
             permalink = "/r/androiddev/comments/xk9abc/jetpack_compose_is_actually_pretty_amazing/",
-            url = "https://i.imgur.com/abcd123.jpg",
+            url = "",
             thumbnail = "https://i.imgur.com/abcd123_thumb.jpg",
             created_utc = System.currentTimeMillis() / 1000,
             selftext = "After using Compose for a few weeks, I’m honestly impressed...",

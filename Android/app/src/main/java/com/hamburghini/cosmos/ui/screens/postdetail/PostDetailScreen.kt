@@ -62,6 +62,12 @@ import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PhotoViewerUtils
 import com.hamburghini.cosmos.core.util.PostType
 import com.hamburghini.cosmos.core.util.PostUtils
+import com.hamburghini.cosmos.ui.components.PostFooter
+import com.hamburghini.cosmos.ui.components.PostGalleryContent
+import com.hamburghini.cosmos.ui.components.PostHeader
+import com.hamburghini.cosmos.ui.components.PostLinkContent
+import com.hamburghini.cosmos.ui.components.PostTextContent
+import com.hamburghini.cosmos.ui.components.PostVideoContent
 
 @Composable
 fun PostDetailScreen(
@@ -239,325 +245,75 @@ private fun PostDetailCard(
 ) {
     val postType = PostUtils.getPostType(post)
 
-    Card(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Header
-            PostHeader(post = post)
+        // Header
+        PostHeader(
+            post = post,
+            onAuthorClick = {},
+            onSubredditClick = {}
+        )
 
-            // Title
-            Text(
-                text = post.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // Flair
-            PostUtils.getFlairText(post)?.let { flair ->
-                Text(
-                    text = flair,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-
-            // Content
-            when (postType) {
-                PostType.IMAGE -> PostImageContent(
-                    post = post,
-                    onImageClick = {
-                        val imageUrls = PhotoViewerUtils.extractImageUrls(post)
-                        if (imageUrls.isNotEmpty()) {
-                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
-                        }
-                    }
-                )
-                PostType.VIDEO -> PostVideoContent(post)
-                PostType.TEXT -> PostTextContent(post)
-                PostType.LINK -> PostLinkContent(post)
-                PostType.GALLERY -> PostGalleryContent(
-                    post = post,
-                    onGalleryClick = {
-                        val imageUrls = PhotoViewerUtils.extractImageUrls(post)
-                        if (imageUrls.isNotEmpty()) {
-                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
-                        }
-                    }
-                )
-                PostType.UNKNOWN -> Unit
-            }
-
-            // Voting and stats
-            PostFooter(
-                post = post,
-                currentScore = currentScore,
-                voteState = voteState,
-                onUpvote = onUpvote,
-                onDownvote = onDownvote
-            )
-        }
-    }
-}
-
-@Composable
-private fun PostHeader(post: Post) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = post.subreddit_name_prefixed,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = "•",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "u/${post.author}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
+        // Title
         Text(
-            text = PostUtils.formatTimeAgo(post.created_utc),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun PostImageContent(
-    post: Post,
-    onImageClick: () -> Unit
-) {
-    PostUtils.getImageUrl(post)?.let { imageUrl ->
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = "Post image",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.Black),
-            contentScale = ContentScale.Fit,
-            error = painterResource(R.drawable.ic_launcher_background)
-        )
-    }
-}
-
-@Composable
-private fun PostVideoContent(post: Post) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black),
-        contentAlignment = Alignment.Center
-    ) {
-        PostUtils.getThumbnailUrl(post)?.let { thumbnailUrl ->
-            AsyncImage(
-                model = thumbnailUrl,
-                contentDescription = "Video thumbnail",
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        Icon(
-            imageVector = Icons.Default.PlayArrow,
-            contentDescription = "Play video",
-            tint = Color.White,
-            modifier = Modifier
-                .size(64.dp)
-                .background(
-                    Color.Black.copy(alpha = 0.6f),
-                    RoundedCornerShape(32.dp)
-                )
-                .padding(16.dp)
-        )
-    }
-}
-
-@Composable
-private fun PostTextContent(post: Post) {
-    PostUtils.cleanSelfText(post.selftext)?.let { text ->
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
+            text = post.title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
-    }
-}
 
-@Composable
-private fun PostLinkContent(post: Post) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(12.dp)
-            )
-            .padding(16.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Link,
-            contentDescription = "External link",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Column(modifier = Modifier.weight(1f)) {
+        // Flair
+        PostUtils.getFlairText(post)?.let { flair ->
             Text(
-                text = post.url,
-                style = MaterialTheme.typography.bodyMedium,
+                text = flair,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
-    }
-}
 
-@Composable
-private fun PostGalleryContent(
-    post: Post,
-    onGalleryClick: () -> Unit
-) {
-    val imageCount = post.gallery_data?.items?.size ?: 0
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(12.dp)
+        // Content
+        when (postType) {
+            PostType.IMAGE -> PostGalleryContent(
+                post = post,
+                onGalleryClick = {
+                    val imageUrls = PhotoViewerUtils.extractImageUrls(post)
+                    if (imageUrls.isNotEmpty()) {
+                        PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                    }
+                }
             )
-            .padding(16.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Image,
-            contentDescription = "Gallery post",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            PostType.VIDEO -> PostVideoContent(post)
+            PostType.TEXT -> PostTextContent(post)
+            PostType.LINK -> PostLinkContent(post)
+            PostType.GALLERY -> PostGalleryContent(
+                post = post,
+                onGalleryClick = {
+                    val imageUrls = PhotoViewerUtils.extractImageUrls(post)
+                    if (imageUrls.isNotEmpty()) {
+                        PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                    }
+                }
+            )
+            PostType.UNKNOWN -> Unit
+        }
+
+        // Voting and stats
+        PostFooter(
+            post = post,
+            currentScore = currentScore,
+            voteState = voteState,
+            onUpvote = onUpvote,
+            onDownvote = onDownvote,
+            onMenuClick = null
         )
-
-        Text(
-            text = "Gallery ($imageCount images)",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun PostFooter(
-    post: Post,
-    currentScore: Int,
-    voteState: Boolean?,
-    onUpvote: () -> Unit,
-    onDownvote: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            IconButton(
-                onClick = onUpvote,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowUp,
-                    contentDescription = "Upvote",
-                    tint = when (voteState) {
-                        true -> UpvoteColor
-                        else -> NeutralColor
-                    },
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            Text(
-                text = PostUtils.formatScore(currentScore),
-                style = MaterialTheme.typography.titleMedium,
-                color = when (voteState) {
-                    true -> UpvoteColor
-                    false -> DownvoteColor
-                    null -> NeutralColor
-                },
-                fontWeight = FontWeight.Bold
-            )
-
-            IconButton(
-                onClick = onDownvote,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Downvote",
-                    tint = when (voteState) {
-                        false -> DownvoteColor
-                        else -> NeutralColor
-                    },
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.ChatBubbleOutline,
-                contentDescription = "Comments",
-                tint = NeutralColor,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = PostUtils.formatCommentCount(post.num_comments),
-                style = MaterialTheme.typography.bodyLarge,
-                color = NeutralColor,
-                fontWeight = FontWeight.Medium
-            )
-        }
     }
 }
 
@@ -584,6 +340,6 @@ private fun copyPostLink(context: Context, post: Post) {
 @Composable
 fun PreviewPostDetailScreen() {
     PostDetailContent(
-        currentPost = Post.mock
+        currentPost = Post.mock.copy(likes = false)
     )
 }
