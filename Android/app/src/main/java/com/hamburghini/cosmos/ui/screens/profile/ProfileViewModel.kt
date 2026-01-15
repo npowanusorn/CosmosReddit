@@ -29,11 +29,6 @@ class ProfileViewModel @Inject constructor(
     private val _switchError = MutableStateFlow<String?>(null)
     val switchError: StateFlow<String?> = _switchError.asStateFlow()
 
-    init {
-        // Try to restore previous session if available
-        profileManager.tryRestorePreviousSession()
-    }
-
     /**
      * Logout current user
      */

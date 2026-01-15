@@ -26,49 +26,55 @@ class HomeViewModel @Inject constructor(
     val posts: StateFlow<List<Post>> = _posts.asStateFlow()
 
     private var currentAfter: String? = null
-    private var hasInitializedWithAuthState = false
+    private var lastAuthStateWasLoggedIn: Boolean? = null
 
     init {
-        // Observe authentication state changes and load appropriate feed
+        // Observe authentication state and load appropriate feed
         viewModelScope.launch {
             profileManager.authState.collect { authState ->
-                when (authState) {
-                    is AuthState.LoggedIn -> {
-                        // User is logged in - load personalized feed
-                        if (!hasInitializedWithAuthState) {
-                            // First time initialization - load personalized feed
-                            hasInitializedWithAuthState = true
-                            loadPosts(_uiState.value.currentSortType)
-                        } else {
-                            // User just logged in - switch to personalized feed
-                            loadPosts(_uiState.value.currentSortType, forceRefresh = true)
-                        }
-                    }
-                    is AuthState.NotLoggedIn -> {
-                        if (!hasInitializedWithAuthState) {
-                            // First time initialization - load public feed
-                            hasInitializedWithAuthState = true
-                            loadPosts(_uiState.value.currentSortType)
-                        } else {
-                            // User just logged out - switch to public feed
-                            loadPosts(_uiState.value.currentSortType, forceRefresh = true)
-                        }
-                    }
-                    is AuthState.LoggingIn -> {
-                        // Don't load posts while logging in, wait for final state
-                        if (!hasInitializedWithAuthState) {
-                            // If we're starting in LoggingIn state, wait for completion
-                            // This can happen if user was previously logged in and app is restoring session
-                        }
-                    }
-                    is AuthState.AuthError -> {
-                        if (!hasInitializedWithAuthState) {
-                            // Auth failed on startup - load public feed
-                            hasInitializedWithAuthState = true
-                            loadPosts(_uiState.value.currentSortType)
-                        }
-                        // If auth fails after being logged in, we'll already have posts loaded
-                    }
+                handleAuthStateChange(authState)
+            }
+        }
+    }
+
+    /**
+     * Handle authentication state changes
+     * Load posts immediately on first state emission
+     */
+    private fun handleAuthStateChange(authState: AuthState) {
+        when (authState) {
+            is AuthState.LoggedIn -> {
+                val wasLoggedIn = lastAuthStateWasLoggedIn
+                lastAuthStateWasLoggedIn = true
+
+                // If first time or user just logged in, load personalized feed
+                if (wasLoggedIn == null || wasLoggedIn == false) {
+                    loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                }
+            }
+            is AuthState.NotLoggedIn -> {
+                val wasLoggedIn = lastAuthStateWasLoggedIn
+                lastAuthStateWasLoggedIn = false
+
+                // If first time or user just logged out, load public feed
+                if (wasLoggedIn == null || wasLoggedIn == true) {
+                    loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                }
+            }
+            is AuthState.LoggingIn -> {
+                // Don't reload while logging in - wait for final state
+                // If this is first state and we have no posts, show loading
+                if (lastAuthStateWasLoggedIn == null && _posts.value.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(isLoading = true)
+                }
+            }
+            is AuthState.AuthError -> {
+                val wasLoggedIn = lastAuthStateWasLoggedIn
+                lastAuthStateWasLoggedIn = false
+
+                // Load public feed on error
+                if (wasLoggedIn == null || wasLoggedIn == true) {
+                    loadPosts(_uiState.value.currentSortType, forceRefresh = true)
                 }
             }
         }

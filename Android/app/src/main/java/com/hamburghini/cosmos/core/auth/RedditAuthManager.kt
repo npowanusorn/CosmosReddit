@@ -9,24 +9,17 @@ import android.util.Base64
 import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
 import com.hamburghini.cosmos.core.constants.Constants
+import com.hamburghini.cosmos.core.network.RetrofitClient
 import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.model.RedditAccount
 import com.hamburghini.cosmos.data.model.UserInfo
-import com.hamburghini.cosmos.core.network.RedditApiService
-import com.hamburghini.cosmos.core.network.RetrofitClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.security.SecureRandom
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.net.toUri
-import okhttp3.Interceptor
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
@@ -169,6 +162,7 @@ class RedditAuthManager @Inject constructor(
 
             Log.d(TAG, "Exchanging code for token...")
 
+            // Use RetrofitClient's public API service
             val response = RetrofitClient.publicRedditApiService.getAccessToken(
                 grantType = "authorization_code",
                 code = code,
@@ -233,11 +227,29 @@ class RedditAuthManager @Inject constructor(
 
     /**
      * Fetch user information using access token
+     * Creates a temporary authenticated API service
      */
     private suspend fun fetchUserInfo(accessToken: String): UserInfo? {
         return try {
-            val apiService = createAuthenticatedApiService(accessToken)
-            val response = apiService.getMe()
+            // Temporarily set token in RetrofitClient to fetch user info
+            val tempTokenProvider = object : RetrofitClient.TokenProvider {
+                override fun getAccessToken(): String = accessToken
+            }
+
+            val tempRefresher = object : RetrofitClient.TokenRefresher {
+                override suspend fun refreshToken(): RetrofitClient.RefreshResult {
+                    return RetrofitClient.RefreshResult.Failure
+                }
+            }
+
+            // Temporarily set token handlers
+            RetrofitClient.setTokenHandlers(tempTokenProvider, tempRefresher)
+
+            // Fetch user info
+            val response = RetrofitClient.authenticatedRedditApiService.getMe()
+
+            // Restore original token handlers
+            RetrofitClient.setTokenHandlers(profileManager, profileManager)
 
             if (response.isSuccessful) {
                 val userInfo = response.body()
@@ -249,6 +261,8 @@ class RedditAuthManager @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception fetching user info", e)
+            // Restore original token handlers on error
+            RetrofitClient.setTokenHandlers(profileManager, profileManager)
             null
         }
     }
@@ -266,6 +280,7 @@ class RedditAuthManager @Inject constructor(
 
                 Log.d(TAG, "Refreshing access token...")
 
+                // Use RetrofitClient's public API service for token refresh
                 val response = RetrofitClient.publicRedditApiService.getAccessToken(
                     grantType = "refresh_token",
                     redirectUri = Constants.REDDIT_REDIRECT_URI,
@@ -313,38 +328,6 @@ class RedditAuthManager @Inject constructor(
                 AuthResult.Error("Failed to refresh token - please log in again")
             }
         }
-    }
-
-    /**
-     * Create authenticated API service
-     */
-    private fun createAuthenticatedApiService(accessToken: String): RedditApiService {
-        val authInterceptor = Interceptor { chain ->
-            val originalRequest = chain.request()
-            val newRequest = originalRequest.newBuilder()
-                .header("Authorization", "Bearer $accessToken")
-//                .header("User-Agent", "android:com.hamburghini.cosmos:v1.0 (by /u/YourUsername)")
-                .build()
-            chain.proceed(newRequest)
-        }
-
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
-        val client = OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
-            .addInterceptor(authInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
-
-        return Retrofit.Builder()
-            .baseUrl("https://oauth.reddit.com/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(RedditApiService::class.java)
     }
 
     /**

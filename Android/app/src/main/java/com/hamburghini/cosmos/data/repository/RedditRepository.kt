@@ -1,6 +1,7 @@
 package com.hamburghini.cosmos.data.repository
 
 import android.util.Log
+import com.hamburghini.cosmos.core.network.RetrofitClient
 import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.manager.SubscriptionCacheManager
 import com.hamburghini.cosmos.data.model.Post
@@ -9,7 +10,6 @@ import com.hamburghini.cosmos.data.model.RedditListingResponse
 import com.hamburghini.cosmos.data.model.RedditObject
 import com.hamburghini.cosmos.data.model.SubredditAbout
 import com.hamburghini.cosmos.data.model.SubredditAboutData
-import com.hamburghini.cosmos.core.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
@@ -26,9 +26,14 @@ class RedditRepository @Inject constructor(
         private const val TAG = "RedditRepository"
     }
 
+    // Use RetrofitClient's public API service
     private val publicApiService = RetrofitClient.publicRedditApiService
 
-    // Public posts endpoints (no authentication required)
+    // Use RetrofitClient's authenticated API service (token handled automatically)
+    private val authenticatedApiService = RetrofitClient.authenticatedRedditApiService
+
+    // ==================== Public Posts Endpoints ====================
+
     suspend fun getHotPosts(
         subreddit: String = "all",
         after: String? = null,
@@ -78,16 +83,18 @@ class RedditRepository @Inject constructor(
         }
     }
 
-    // Authenticated posts endpoints (user's personalized feed)
+    // ==================== Authenticated Posts Endpoints ====================
+
     suspend fun getMyHotPosts(
         after: String? = null,
         limit: Int = 25
     ): Response<RedditListingResponse<Post>> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
-
-            apiService.getMyHotPosts(after, limit)
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
+            // Token is automatically added by RetrofitClient's auth interceptor
+            authenticatedApiService.getMyHotPosts(after, limit)
         } catch (e: Exception) {
             throw e
         }
@@ -98,10 +105,10 @@ class RedditRepository @Inject constructor(
         limit: Int = 25
     ): Response<RedditListingResponse<Post>> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
-
-            apiService.getMyBestPosts(after, limit)
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
+            authenticatedApiService.getMyBestPosts(after, limit)
         } catch (e: Exception) {
             throw e
         }
@@ -112,10 +119,10 @@ class RedditRepository @Inject constructor(
         limit: Int = 25
     ): Response<RedditListingResponse<Post>> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
-
-            apiService.getMyNewPosts(after, limit)
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
+            authenticatedApiService.getMyNewPosts(after, limit)
         } catch (e: Exception) {
             throw e
         }
@@ -127,34 +134,36 @@ class RedditRepository @Inject constructor(
         timeframe: String = "day"
     ): Response<RedditListingResponse<Post>> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
-
-            apiService.getMyTopPosts(after, limit, timeframe)
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
+            authenticatedApiService.getMyTopPosts(after, limit, timeframe)
         } catch (e: Exception) {
             throw e
         }
     }
 
-    // Voting functionality (authenticated)
+    // ==================== Voting Functionality ====================
+
     suspend fun vote(postId: String, direction: Int): Response<ResponseBody> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
-
-            apiService.vote(postId, direction)
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
+            authenticatedApiService.vote(postId, direction)
         } catch (e: Exception) {
             throw e
         }
     }
 
-    // Save/unsave functionality (authenticated)
+    // ==================== Save/Unsave Functionality ====================
+
     suspend fun savePost(postId: String): Response<ResponseBody> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
-
-            apiService.save(postId)
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
+            authenticatedApiService.save(postId)
         } catch (e: Exception) {
             throw e
         }
@@ -162,35 +171,27 @@ class RedditRepository @Inject constructor(
 
     suspend fun unsavePost(postId: String): Response<ResponseBody> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
-
-            apiService.unsave(postId)
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
+            authenticatedApiService.unsave(postId)
         } catch (e: Exception) {
             throw e
         }
     }
 
-    // Helper method to determine if user is logged in
+    // ==================== Helper Methods ====================
+
     fun isUserLoggedIn(): Boolean {
         return profileManager.isLoggedIn()
     }
 
-    // Helper method to get current username
     fun getCurrentUsername(): String {
         return profileManager.getDisplayUsername()
     }
 
-    /**
-     * Get user's subscribed subreddits with integrated caching
-     *
-     * @param after For pagination when fetching from API (null for first page)
-     * @param limit Number of items per page when fetching from API
-     * @param useCache If true, attempts to load from cache first (default: true)
-     * @param saveToCache If true, saves API results to cache (default: true)
-     *
-     * @return Response containing listing data with metadata about cache usage in headers
-     */
+    // ==================== Subscriptions with Caching ====================
+
     suspend fun getMySubscribedSubreddits(
         after: String? = null,
         limit: Int = 100,
@@ -200,13 +201,10 @@ class RedditRepository @Inject constructor(
         val username = profileManager.getCurrentAccount()?.username
             ?: throw IllegalStateException("User not logged in")
 
-        val apiService = profileManager.getAuthenticatedApiService()
-            ?: throw IllegalStateException("User not logged in")
-
-        // If this is a paginated request (after != null), skip cache and go straight to API
+        // If this is a paginated request, skip cache
         if (after != null) {
             Log.d(TAG, "Pagination request detected, fetching from API")
-            return@withContext apiService.getMySubscribedSubreddits(after, limit)
+            return@withContext authenticatedApiService.getMySubscribedSubreddits(after, limit)
         }
 
         // Try cache first if enabled
@@ -243,7 +241,7 @@ class RedditRepository @Inject constructor(
 
         try {
             do {
-                val response = apiService.getMySubscribedSubreddits(currentAfter, limit)
+                val response = authenticatedApiService.getMySubscribedSubreddits(currentAfter, limit)
 
                 if (response.isSuccessful) {
                     val listing = response.body()
@@ -258,7 +256,6 @@ class RedditRepository @Inject constructor(
                         break
                     }
                 } else {
-                    // If API fails, return the error response
                     return@withContext response
                 }
             } while (currentAfter != null && pageCount < maxPages)
@@ -278,7 +275,7 @@ class RedditRepository @Inject constructor(
                             data = subreddit
                         )
                     },
-                    after = null, // All data loaded, no more pages
+                    after = null,
                     before = null
                 )
             )
@@ -305,10 +302,11 @@ class RedditRepository @Inject constructor(
         action: String // "sub" or "unsub"
     ): Response<ResponseBody> {
         return try {
-            val apiService = profileManager.getAuthenticatedApiService()
-                ?: throw IllegalStateException("User not logged in")
+            if (!profileManager.isLoggedIn()) {
+                throw IllegalStateException("User not logged in")
+            }
 
-            val response = apiService.subscribe(subredditName, action)
+            val response = authenticatedApiService.subscribe(subredditName, action)
 
             // Invalidate cache after subscription change
             if (response.isSuccessful) {

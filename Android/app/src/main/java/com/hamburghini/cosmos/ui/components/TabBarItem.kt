@@ -55,7 +55,7 @@ fun TabBarItem(
             when (interaction) {
                 is PressInteraction.Press -> {
                     isPressed = true
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
                 }
                 is PressInteraction.Release -> isPressed = false
                 is PressInteraction.Cancel -> isPressed = false

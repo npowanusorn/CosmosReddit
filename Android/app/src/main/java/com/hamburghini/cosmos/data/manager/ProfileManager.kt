@@ -6,10 +6,11 @@ import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.hamburghini.cosmos.core.auth.RedditAuthManager
+import com.hamburghini.cosmos.core.network.RedditApiService
+import com.hamburghini.cosmos.core.network.RetrofitClient
 import com.hamburghini.cosmos.data.model.AuthState
 import com.hamburghini.cosmos.data.model.RedditAccount
 import com.hamburghini.cosmos.data.model.UserInfo
-import com.hamburghini.cosmos.core.network.RedditApiService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,26 +19,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.content.edit
-import okhttp3.Interceptor
 
 /**
- * Enhanced ProfileManager with subscription cache integration
- * Handles cache cleanup on account changes
+ * Enhanced ProfileManager with RetrofitClient integration
+ * Implements token provider and refresher for automatic token management
+ * Optimized for fast initialization
  */
 @Singleton
 class ProfileManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val subscriptionCacheManager: SubscriptionCacheManager
-) {
+) : RetrofitClient.TokenProvider, RetrofitClient.TokenRefresher {
+
     companion object {
+        private const val TAG = "ProfileManager"
         private const val PREFS_NAME = "reddit_profile_prefs"
         private const val KEY_ACCOUNTS = "stored_accounts"
         private const val KEY_ACTIVE_ACCOUNT_USERNAME = "active_account_username"
@@ -58,12 +56,83 @@ class ProfileManager @Inject constructor(
 
     init {
         loadStoredAccounts()
-        loadLastAuthState()
+        initializeAuthState()
+
+        // Register this ProfileManager as the token handler for RetrofitClient
+        RetrofitClient.setTokenHandlers(this, this)
+    }
+
+    /**
+     * Initialize auth state quickly
+     * If there's an active account, start token refresh in background
+     */
+    private fun initializeAuthState() {
+        val activeUsername = prefs.getString(KEY_ACTIVE_ACCOUNT_USERNAME, null)
+
+        if (activeUsername != null) {
+            val account = _storedAccounts.value.find { it.username == activeUsername }
+
+            if (account != null && account.refreshToken.isNotBlank()) {
+                // Set to LoggingIn temporarily
+                _authState.value = AuthState.LoggingIn
+
+                // Restore session in background - non-blocking
+                scope.launch {
+                    restoreSessionInBackground()
+                }
+            } else {
+                // No valid account found, set to NotLoggedIn immediately
+                _authState.value = AuthState.NotLoggedIn
+            }
+        } else {
+            // No active account, set to NotLoggedIn immediately
+            _authState.value = AuthState.NotLoggedIn
+        }
     }
 
     fun setAuthManager(authManager: RedditAuthManager) {
         this.authManager = authManager
     }
+
+    // ==================== TokenProvider Implementation ====================
+
+    override fun getAccessToken(): String? {
+        return getCurrentAccount()?.accessToken
+    }
+
+    // ==================== TokenRefresher Implementation ====================
+
+    override suspend fun refreshToken(): RetrofitClient.RefreshResult {
+        val account = getCurrentAccount() ?: return RetrofitClient.RefreshResult.Failure
+        val refreshToken = account.refreshToken
+
+        if (refreshToken.isBlank()) {
+            return RetrofitClient.RefreshResult.Failure
+        }
+
+        return try {
+            // Use RedditAuthManager to refresh token
+            if (::authManager.isInitialized) {
+                when (val result = authManager.refreshAccessToken(refreshToken)) {
+                    is RedditAuthManager.AuthResult.Success -> {
+                        // Update account with new token
+                        completeLogin(result.account, result.userInfo)
+                        RetrofitClient.RefreshResult.Success(result.account.accessToken)
+                    }
+                    is RedditAuthManager.AuthResult.Error -> {
+                        handleLoginError(result.message)
+                        RetrofitClient.RefreshResult.Failure
+                    }
+                }
+            } else {
+                RetrofitClient.RefreshResult.Failure
+            }
+        } catch (e: Exception) {
+            RetrofitClient.RefreshResult.Failure
+        }
+    }
+
+    // ==================== Public API ====================
 
     fun isLoggedIn(): Boolean {
         return _authState.value is AuthState.LoggedIn
@@ -197,9 +266,15 @@ class ProfileManager @Inject constructor(
         }
     }
 
+    /**
+     * Get authenticated API service from RetrofitClient
+     */
     fun getAuthenticatedApiService(): RedditApiService? {
-        val account = getCurrentAccount() ?: return null
-        return createAuthenticatedApiService(account.accessToken)
+        return if (isLoggedIn()) {
+            RetrofitClient.authenticatedRedditApiService
+        } else {
+            null
+        }
     }
 
     suspend fun refreshCurrentToken(): Boolean {
@@ -223,21 +298,21 @@ class ProfileManager @Inject constructor(
         }
     }
 
-    fun tryRestorePreviousSession() {
+    /**
+     * Restore previous session in background
+     * Called during init to avoid blocking
+     */
+    private suspend fun restoreSessionInBackground() {
         val activeUsername = prefs.getString(KEY_ACTIVE_ACCOUNT_USERNAME, null)
         if (activeUsername != null) {
             val account = _storedAccounts.value.find { it.username == activeUsername }
-            if (account != null && account.refreshToken.isNotBlank()) {
-                _authState.value = AuthState.LoggingIn
-
-                scope.launch {
-                    when (val result = authManager.refreshAccessToken(account.refreshToken)) {
-                        is RedditAuthManager.AuthResult.Success -> {
-                            completeLogin(result.account, result.userInfo)
-                        }
-                        is RedditAuthManager.AuthResult.Error -> {
-                            _authState.value = AuthState.NotLoggedIn
-                        }
+            if (account != null && account.refreshToken.isNotBlank() && ::authManager.isInitialized) {
+                when (val result = authManager.refreshAccessToken(account.refreshToken)) {
+                    is RedditAuthManager.AuthResult.Success -> {
+                        completeLogin(result.account, result.userInfo)
+                    }
+                    is RedditAuthManager.AuthResult.Error -> {
+                        _authState.value = AuthState.NotLoggedIn
                     }
                 }
             } else {
@@ -247,6 +322,8 @@ class ProfileManager @Inject constructor(
             _authState.value = AuthState.NotLoggedIn
         }
     }
+
+    // ==================== Private Helpers ====================
 
     private fun loadStoredAccounts() {
         val accountsJson = prefs.getString(KEY_ACCOUNTS, null)
@@ -279,46 +356,8 @@ class ProfileManager @Inject constructor(
         }
     }
 
-    private fun loadLastAuthState() {
-        val activeUsername = prefs.getString(KEY_ACTIVE_ACCOUNT_USERNAME, null)
-        _authState.value = if (activeUsername != null && _storedAccounts.value.any { it.username == activeUsername }) {
-            AuthState.LoggingIn
-        } else {
-            AuthState.NotLoggedIn
-        }
-    }
-
     private fun saveAuthState() {
         val isLoggedIn = _authState.value is AuthState.LoggedIn
         prefs.edit().putBoolean("was_logged_in", isLoggedIn).apply()
-    }
-
-    private fun createAuthenticatedApiService(accessToken: String): RedditApiService {
-        val authInterceptor = Interceptor { chain ->
-            val originalRequest = chain.request()
-            val newRequest = originalRequest.newBuilder()
-                .header("Authorization", "Bearer $accessToken")
-                .header("User-Agent", "android:com.hamburghini.cosmos:v1.0 (by /u/YourUsername)")
-                .build()
-            chain.proceed(newRequest)
-        }
-
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
-        val client = OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
-            .addInterceptor(authInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
-
-        return Retrofit.Builder()
-            .baseUrl("https://oauth.reddit.com/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(RedditApiService::class.java)
     }
 }

@@ -103,6 +103,8 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
+
     /* -------------------- Testing -------------------- */
     testImplementation(libs.junit)
 

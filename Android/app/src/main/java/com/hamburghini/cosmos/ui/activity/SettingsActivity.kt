@@ -18,15 +18,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
+import com.hamburghini.cosmos.ui.screens.settings.SettingsNavGraph
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             CosmosTheme {
+                val navController = rememberNavController()
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
@@ -34,7 +39,11 @@ class SettingsActivity : ComponentActivity() {
                             title = "Settings",
                             navigationIcon = {
                                 IconButton(
-                                    onClick = { finish() }
+                                    onClick = {
+                                        if (!navController.popBackStack()) {
+                                            finish()
+                                        }
+                                    }
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -51,7 +60,11 @@ class SettingsActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(innerPadding),
                         color = MaterialTheme.colorScheme.background
-                    ) { }
+                    ) {
+                        SettingsNavGraph(
+                            navController = navController
+                        )
+                    }
                 }
             }
         }
