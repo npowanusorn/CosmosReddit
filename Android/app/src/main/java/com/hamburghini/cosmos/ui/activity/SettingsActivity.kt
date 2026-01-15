@@ -18,9 +18,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
 import com.hamburghini.cosmos.ui.screens.settings.SettingsNavGraph
+import com.hamburghini.cosmos.ui.screens.settings.SettingsRoute
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -32,11 +34,26 @@ class SettingsActivity : ComponentActivity() {
         setContent {
             CosmosTheme {
                 val navController = rememberNavController()
+                val currentRoute = navController
+                    .currentBackStackEntryAsState()
+                    .value
+                    ?.destination
+                    ?.route
+
+                val title = when (currentRoute) {
+                    SettingsRoute.Appearance.route -> "Appearance"
+                    SettingsRoute.Content.route -> "Content"
+                    SettingsRoute.Media.route -> "Media"
+                    SettingsRoute.About.route -> "About"
+                    else -> "Settings"
+                }
+
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
                         RedditTopAppBar(
-                            title = "Settings",
+                            title = title,
                             navigationIcon = {
                                 IconButton(
                                     onClick = {
