@@ -3,6 +3,7 @@ package com.hamburghini.cosmos.ui.screens.postdetail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.repository.CommentSort
 import com.hamburghini.cosmos.data.repository.CommentsRepository
@@ -19,7 +20,8 @@ import javax.inject.Inject
 class PostDetailViewModel @Inject constructor(
     private val commentsRepository: CommentsRepository,
     private val redditRepository: RedditRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val profileManager: ProfileManager
 ) : ViewModel() {
 
     val post: StateFlow<Post?> = savedStateHandle.getStateFlow("post", null)
@@ -145,6 +147,14 @@ class PostDetailViewModel @Inject constructor(
 
     fun clearCommentSubmittedFlag() {
         _uiState.value = _uiState.value.copy(commentSubmitted = false)
+    }
+
+    fun isLoggedIn(): Boolean {
+        return profileManager.isLoggedIn()
+    }
+
+    fun savePost(name: String, saveState: Boolean) {
+
     }
 }
 

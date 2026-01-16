@@ -270,22 +270,6 @@ private fun PostDetailCard(
     }
 }
 
-private fun sharePost(context: Context, post: Post) {
-    val shareIntent = Intent().apply {
-        action = Intent.ACTION_SEND
-        type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, post.title)
-        putExtra(Intent.EXTRA_TEXT, "https://reddit.com${post.permalink}")
-    }
-    context.startActivity(Intent.createChooser(shareIntent, "Share post via"))
-}
-
-private fun copyPostLink(context: Context, post: Post) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("Reddit post link", "https://reddit.com${post.permalink}")
-    clipboard.setPrimaryClip(clip)
-}
-
 @Preview(
     name = "PostDetailScreen",
     device = Devices.PHONE
