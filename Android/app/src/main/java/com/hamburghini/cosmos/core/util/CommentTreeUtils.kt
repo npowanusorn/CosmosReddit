@@ -229,15 +229,3 @@ data class CommentWithDepth(
     val comment: Comment,
     val depth: Int
 )
-
-/**
- * Sort options for comments
- */
-enum class CommentSort(val apiValue: String, val displayName: String) {
-    CONFIDENCE("confidence", "Best"),
-    TOP("top", "Top"),
-    NEW("new", "New"),
-    CONTROVERSIAL("controversial", "Controversial"),
-    OLD("old", "Old"),
-    QA("qa", "Q&A")
-}

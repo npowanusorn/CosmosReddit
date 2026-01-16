@@ -66,6 +66,7 @@ import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PhotoViewerUtils
 import com.hamburghini.cosmos.core.util.PostType
 import com.hamburghini.cosmos.core.util.PostUtils
+import com.hamburghini.cosmos.data.repository.CommentSort
 import com.hamburghini.cosmos.data.repository.CommentsState
 import com.hamburghini.cosmos.ui.components.CommentItem
 import com.hamburghini.cosmos.ui.components.PostFooter
@@ -140,22 +141,48 @@ private fun PostDetailContent(
                 is CommentsState.Loaded -> {
                     val flattenedComments = CommentTreeUtils.flattenCommentTree(commentsState.comments)
 
-                    item {
-                        Text(
-                            text = "${flattenedComments.size} Comments",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    if (flattenedComments.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(20.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No comments",
+                                    color = MaterialTheme.colorScheme.surfaceBright,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    } else {
+                        item {
+                            Text(
+                                text = "${flattenedComments.size} Comments",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
 
-                    items(
-                        items = flattenedComments,
-                        key = { it.comment.id }
-                    ) { commentWithDepth ->
-                        CommentItem(
-                            comment = commentWithDepth.comment,
-                            depth = commentWithDepth.depth
-                        )
+                        items(
+                            items = commentsState.comments,
+                            key = { it.id }
+                        ) { comment ->
+                            CommentItem(
+                                comment = comment,
+                                onVote = { commentId, newVote ->
+                                    Logger.i("onVote $commentId $newVote")
+                                },
+                                onMoreClick = {
+                                    Logger.i("onMoreClick")
+                                },
+                                onAuthorClick = {
+                                    Logger.i("onAuthorClick")
+                                }
+                            )
+                        }
                     }
                 }
                 CommentsState.Loading -> {
@@ -292,6 +319,6 @@ private fun copyPostLink(context: Context, post: Post) {
 fun PreviewPostDetailScreen() {
     PostDetailContent(
         currentPost = Post.mock.copy(likes = false),
-        commentsState = CommentsState.Loading
+        commentsState = CommentsState.Loaded(listOf(), CommentSort.CONFIDENCE)
     )
 }

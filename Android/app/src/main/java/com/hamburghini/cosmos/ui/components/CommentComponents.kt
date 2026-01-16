@@ -1,6 +1,7 @@
 package com.hamburghini.cosmos.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -68,7 +70,8 @@ fun CommentItem(
     depth: Int = 0,
     onVote: (String, Int) -> Unit = { _, _ -> },
     onReply: (String) -> Unit = {},
-    onMoreClick: () -> Unit = {},
+    onMoreClick: (Comment) -> Unit = {},
+    onAuthorClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var currentScore by remember { mutableIntStateOf(comment.score) }
@@ -115,7 +118,8 @@ fun CommentItem(
                         author = comment.author,
                         timeAgo = PostUtils.formatTimeAgo(comment.created_utc),
                         isCollapsed = isCollapsed,
-                        onToggleCollapse = { isCollapsed = !isCollapsed }
+                        onToggleCollapse = { isCollapsed = !isCollapsed },
+                        onAuthorClick = { onAuthorClick(comment.author) }
                     )
 
                     if (!isCollapsed) {
@@ -151,7 +155,7 @@ fun CommentItem(
                                 onVote(comment.name, newVote)
                             },
                             onReply = { onReply(comment.id) },
-                            onMoreClick = onMoreClick
+                            onMoreClick = { onMoreClick(comment) }
                         )
                     }
                 }
@@ -167,7 +171,8 @@ fun CommentItem(
                     comment = childComment,
                     depth = depth + 1,
                     onVote = onVote,
-                    onReply = onReply
+                    onReply = onReply,
+                    onAuthorClick = onAuthorClick
                 )
             }
         }
@@ -179,7 +184,8 @@ private fun CommentHeader(
     author: String,
     timeAgo: String,
     isCollapsed: Boolean,
-    onToggleCollapse: () -> Unit
+    onToggleCollapse: () -> Unit,
+    onAuthorClick: (String) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -191,6 +197,7 @@ private fun CommentHeader(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
+
             // Author avatar placeholder
             Box(
                 modifier = Modifier
@@ -213,7 +220,11 @@ private fun CommentHeader(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { onAuthorClick(author) }
+                    .padding(vertical = 2.dp, horizontal = 4.dp)
             )
 
             Text(
