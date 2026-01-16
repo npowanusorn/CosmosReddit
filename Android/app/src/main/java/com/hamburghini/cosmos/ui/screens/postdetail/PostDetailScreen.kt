@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
@@ -26,8 +27,10 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.R
+import com.hamburghini.cosmos.core.util.CommentTreeUtils
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
@@ -62,6 +66,8 @@ import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PhotoViewerUtils
 import com.hamburghini.cosmos.core.util.PostType
 import com.hamburghini.cosmos.core.util.PostUtils
+import com.hamburghini.cosmos.data.repository.CommentsState
+import com.hamburghini.cosmos.ui.components.CommentItem
 import com.hamburghini.cosmos.ui.components.PostFooter
 import com.hamburghini.cosmos.ui.components.PostGalleryContent
 import com.hamburghini.cosmos.ui.components.PostHeader
@@ -75,163 +81,108 @@ fun PostDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val post by viewModel.post.collectAsState()
+    val commentsState by viewModel.commentsState.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
         post?.let { currentPost ->
-            PostDetailContent(currentPost)
+            PostDetailContent(
+                currentPost = currentPost,
+                commentsState = commentsState
+            )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PostDetailContent(
-    currentPost: Post
+    currentPost: Post,
+    commentsState: CommentsState
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    var showPostMenu by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Post Content
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    PostDetailCard(
-                        post = currentPost,
-                        currentScore = currentPost.score,
-                        voteState = currentPost.likes,
-                        onUpvote = {
-                            val newVote = if (currentPost.likes == true) 0 else 1
-                            val scoreDiff = when (currentPost.likes) {
-                                true if newVote == 0 -> -1
-                                false -> 2
-                                null -> 1
-                                else -> 0
-                            }
-                            currentPost.score += scoreDiff
-                            currentPost.likes = if (newVote == 0) null else true
-                            Logger.i("TODO handle vote")
-                        },
-                        onDownvote = {
-                            val newVote = if (currentPost.likes == false) 0 else -1
-                            val scoreDiff = when (currentPost.likes) {
-                                false if newVote == 0 -> 1
-                                true -> -2
-                                null -> -1
-                                else -> 0
-                            }
-                            currentPost.score += scoreDiff
-                            currentPost.likes = if (newVote == 0) null else false
-                            Logger.i("TODO handle vote")
-//                            homeViewModel.voteOnPost(post.name, newVote)
-                        },
-                        context = context
-                    )
-                }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Post content
+            item {
+                PostDetailCard(
+                    post = currentPost,
+                    currentScore = currentPost.score,
+                    voteState = currentPost.likes,
+                    onUpvote = { /* ... */ },
+                    onDownvote = { /* ... */ },
+                    context = context
+                )
+            }
 
-                // Comments section placeholder
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+            // Comments section
+            when (commentsState) {
+                is CommentsState.Error -> {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ChatBubbleOutline,
-                                contentDescription = "Comments",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(48.dp)
-                            )
                             Text(
-                                text = "Comments Coming Soon",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "${PostUtils.formatCommentCount(currentPost.num_comments)} comments",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Error: ${commentsState.message}",
+                                modifier = Modifier.padding(16.dp)
                             )
                         }
+                    }
+                }
+                is CommentsState.Loaded -> {
+                    val flattenedComments = CommentTreeUtils.flattenCommentTree(commentsState.comments)
+
+                    item {
+                        Text(
+                            text = "${flattenedComments.size} Comments",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    items(
+                        items = flattenedComments,
+                        key = { it.comment.id }
+                    ) { commentWithDepth ->
+                        CommentItem(
+                            comment = commentWithDepth.comment,
+                            depth = commentWithDepth.depth
+                        )
+                    }
+                }
+                CommentsState.Loading -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LoadingIndicator()
+                        }
+                    }
+                }
+                CommentsState.NotLoaded -> {
+                    item {
+                        Text("Comments not loaded")
                     }
                 }
             }
         }
 
-        // Snackbar
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
-
-    // Post Menu Bottom Sheet
-//        if (showPostMenu) {
-//            PostMenuBottomSheet(
-//                post = currentPost,
-//                isLoggedIn = homeViewModel.isLoggedIn(),
-//                onDismissRequest = { showPostMenu = false },
-//                onSaveClick = {
-//                    val newSaveState = !currentPost.saved
-//                    homeViewModel.savePost(currentPost.name, newSaveState)
-//                    currentPost = currentPost.copy(saved = newSaveState)
-//                    coroutineScope.launch {
-//                        snackbarHostState.showSnackbar(
-//                            if (newSaveState) "Post saved" else "Post unsaved"
-//                        )
-//                    }
-//                },
-//                onHideClick = {
-//                    coroutineScope.launch {
-//                        snackbarHostState.showSnackbar("Hide functionality coming soon")
-//                    }
-//                },
-//                onReportClick = {
-//                    coroutineScope.launch {
-//                        snackbarHostState.showSnackbar("Report functionality coming soon")
-//                    }
-//                },
-//                onShareClick = {
-//                    sharePost(context, currentPost)
-//                },
-//                onCopyLinkClick = {
-//                    copyPostLink(context, currentPost)
-//                    coroutineScope.launch {
-//                        snackbarHostState.showSnackbar("Link copied to clipboard")
-//                    }
-//                },
-//                onBlockUserClick = {
-//                    coroutineScope.launch {
-//                        snackbarHostState.showSnackbar("Block user functionality coming soon")
-//                    }
-//                },
-//                onViewProfileClick = {
-//                    coroutineScope.launch {
-//                        snackbarHostState.showSnackbar("Navigate to u/${currentPost.author}")
-//                    }
-//                },
-//                onViewSubredditClick = {
-//                    coroutineScope.launch {
-//                        snackbarHostState.showSnackbar("Navigate to ${currentPost.subreddit_name_prefixed}")
-//                    }
-//                }
-//            )
-//        }
 }
 
 @Composable
@@ -340,6 +291,7 @@ private fun copyPostLink(context: Context, post: Post) {
 @Composable
 fun PreviewPostDetailScreen() {
     PostDetailContent(
-        currentPost = Post.mock.copy(likes = false)
+        currentPost = Post.mock.copy(likes = false),
+        commentsState = CommentsState.Loading
     )
 }

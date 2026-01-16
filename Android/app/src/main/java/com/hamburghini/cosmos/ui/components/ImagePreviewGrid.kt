@@ -70,36 +70,41 @@ private fun TwoImages(
         }
         .build()
 
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(12.dp)),
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+            .clip(RoundedCornerShape(12.dp))
     ) {
-        urls.take(2).forEachIndexed { idx, url ->
-            AsyncImage(
-                model = url,
-                imageLoader = imageLoader,
-                contentDescription = null,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clickable(
-                        onClick = { onClick(idx) }
-                    ),
-                contentScale = ContentScale.Crop
-            )
+        Row(
+            modifier = modifier
+                .fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            urls.take(2).forEachIndexed { idx, url ->
+                AsyncImage(
+                    model = url,
+                    imageLoader = imageLoader,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            onClick = { onClick(idx) }
+                        ),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
-    }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp),
-        contentAlignment = Alignment.BottomEnd
-    ) {
-        ImageCountBox(count = urls.size)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            ImageCountBox(count = urls.size)
+        }
     }
 }
 

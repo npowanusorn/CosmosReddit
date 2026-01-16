@@ -1,7 +1,7 @@
 package com.hamburghini.cosmos.data.repository
 
-import android.util.Log
 import com.hamburghini.cosmos.core.network.RetrofitClient
+import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.manager.SubscriptionCacheManager
 import com.hamburghini.cosmos.data.model.Post
@@ -22,9 +22,6 @@ class RedditRepository @Inject constructor(
     private val profileManager: ProfileManager,
     private val subscriptionCacheManager: SubscriptionCacheManager
 ) {
-    companion object {
-        private const val TAG = "RedditRepository"
-    }
 
     // Use RetrofitClient's public API service
     private val publicApiService = RetrofitClient.publicRedditApiService
@@ -203,7 +200,7 @@ class RedditRepository @Inject constructor(
 
         // If this is a paginated request, skip cache
         if (after != null) {
-            Log.d(TAG, "Pagination request detected, fetching from API")
+            Logger.d( "Pagination request detected, fetching from API")
             return@withContext authenticatedApiService.getMySubscribedSubreddits(after, limit)
         }
 
@@ -211,7 +208,7 @@ class RedditRepository @Inject constructor(
         if (useCache) {
             val subscriptionsList = subscriptionCacheManager.loadSubscriptions(username)
             if (subscriptionsList != null) {
-                Log.d(TAG, "Loaded ${subscriptionsList.size} subscriptions from cache")
+                Logger.d( "Loaded ${subscriptionsList.size} subscriptions from cache")
 
                 val listingData = RedditListingResponse(
                     data = RedditListingData(
@@ -229,11 +226,11 @@ class RedditRepository @Inject constructor(
                 return@withContext Response.success(listingData)
             }
 
-            Log.d(TAG, "No cache available for user: $username")
+            Logger.d( "No cache available for user: $username")
         }
 
         // Fetch from API - load ALL subscriptions by paginating automatically
-        Log.d(TAG, "Fetching all subscriptions from API")
+        Logger.d( "Fetching all subscriptions from API")
         val allSubreddits = mutableListOf<SubredditAboutData>()
         var currentAfter: String? = null
         var pageCount = 0
@@ -251,7 +248,7 @@ class RedditRepository @Inject constructor(
                         currentAfter = listing.data.after
                         pageCount++
 
-                        Log.d(TAG, "Fetched page $pageCount with ${subreddits.size} subscriptions, total: ${allSubreddits.size}")
+                        Logger.d( "Fetched page $pageCount with ${subreddits.size} subscriptions, total: ${allSubreddits.size}")
                     } else {
                         break
                     }
@@ -262,7 +259,7 @@ class RedditRepository @Inject constructor(
 
             // Save to cache if enabled
             if (saveToCache && allSubreddits.isNotEmpty()) {
-                Log.d(TAG, "Saving ${allSubreddits.size} subscriptions to cache")
+                Logger.d( "Saving ${allSubreddits.size} subscriptions to cache")
                 subscriptionCacheManager.saveSubscriptions(username, allSubreddits)
             }
 
@@ -312,7 +309,7 @@ class RedditRepository @Inject constructor(
             if (response.isSuccessful) {
                 val username = profileManager.getCurrentAccount()?.username
                 if (username != null) {
-                    Log.d(TAG, "Clearing cache after subscription change for user: $username")
+                    Logger.d( "Clearing cache after subscription change for user: $username")
                     subscriptionCacheManager.clearCache(username)
                 }
             }
