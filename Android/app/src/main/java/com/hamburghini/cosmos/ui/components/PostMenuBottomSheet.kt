@@ -177,15 +177,8 @@ private fun PostMenuContent(
                 subtitle = "Copy post URL to clipboard",
                 onClick = onCopyLinkClick
             )
-        }
 
-        // User Actions (only when logged in)
-        if (isLoggedIn) {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-            )
-
-            MenuItemSection(title = "Your Actions") {
+            if (isLoggedIn) {
                 MenuItem(
                     icon = if (post.saved) Icons.Default.Bookmarks else Icons.Default.BookmarkBorder,
                     title = if (post.saved) "Unsave" else "Save",
@@ -201,6 +194,29 @@ private fun PostMenuContent(
                 )
             }
         }
+
+//        // User Actions (only when logged in)
+//        if (isLoggedIn) {
+//            HorizontalDivider(
+//                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+//            )
+//
+//            MenuItemSection(title = "Your Actions") {
+//                MenuItem(
+//                    icon = if (post.saved) Icons.Default.Bookmarks else Icons.Default.BookmarkBorder,
+//                    title = if (post.saved) "Unsave" else "Save",
+//                    subtitle = if (post.saved) "Remove from saved posts" else "Save for later",
+//                    onClick = onSaveClick
+//                )
+//
+//                MenuItem(
+//                    icon = if (post.hidden == true) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+//                    title = if (post.hidden == true) "Unhide" else "Hide",
+//                    subtitle = if (post.hidden == true) "Show this post" else "Hide from your feed",
+//                    onClick = onHideClick
+//                )
+//            }
+//        }
 
         // Navigation
         HorizontalDivider(

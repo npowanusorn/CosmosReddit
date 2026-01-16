@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import com.hamburghini.cosmos.core.util.CommentUtils
 import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PostUtils
-import com.hamburghini.cosmos.core.util.openUrl
 import com.hamburghini.cosmos.data.model.Comment
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
@@ -82,6 +81,8 @@ fun CommentItem(
     var currentScore by remember { mutableIntStateOf(comment.score) }
     var voteState by remember { mutableStateOf<Boolean?>(null) }
     var isCollapsed by remember { mutableStateOf(false) }
+    var showExternalLinkDialog by remember { mutableStateOf(false) }
+    var url by remember { mutableStateOf("") }
 
     val visualDepth = depth.coerceAtMost(MAX_VISUAL_DEPTH)
     val indentSize = (visualDepth * INDENT_WIDTH).dp
@@ -143,7 +144,8 @@ fun CommentItem(
                                 if (link.contains("reddit.com")) {
                                     Logger.i("reddit url")
                                 } else if (link.startsWith("http://") || link.startsWith("https://")) {
-                                    context.openUrl(link)
+                                    url = link
+                                    showExternalLinkDialog = true
                                 }
                             }
                         )
@@ -195,6 +197,13 @@ fun CommentItem(
                 )
             }
         }
+    }
+
+    if (showExternalLinkDialog) {
+        ExternalLinkDialog(
+            url = url,
+            onDismiss = { showExternalLinkDialog = false }
+        )
     }
 }
 
