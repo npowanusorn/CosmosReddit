@@ -16,9 +16,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = uri("$rootDir/app/libs/playerplusrepo")
-        }
+        maven { url = uri("$rootDir/app/libs/playerplusrepo") }
+        maven { url = uri("https://jitpack.io") }
     }
 }
 

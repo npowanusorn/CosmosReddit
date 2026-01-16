@@ -103,7 +103,11 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
+    /* -------------------- Datastore -------------------- */
     implementation("androidx.datastore:datastore-preferences:1.2.0")
+
+    /* -------------------- Markdown -------------------- */
+    implementation("com.github.jeziellago:compose-markdown:0.5.8")
 
     /* -------------------- Testing -------------------- */
     testImplementation(libs.junit)

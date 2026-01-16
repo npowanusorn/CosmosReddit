@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,17 +39,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.hamburghini.cosmos.core.util.CommentTreeUtils
+import com.hamburghini.cosmos.core.util.CommentUtils
+import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PostUtils
+import com.hamburghini.cosmos.core.util.openUrl
 import com.hamburghini.cosmos.data.model.Comment
 import com.hamburghini.cosmos.ui.theme.DownvoteColor
 import com.hamburghini.cosmos.ui.theme.NeutralColor
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.ui.theme.UpvoteColor
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 /**
  * Maximum depth for comment nesting visualization
@@ -80,6 +85,13 @@ fun CommentItem(
 
     val visualDepth = depth.coerceAtMost(MAX_VISUAL_DEPTH)
     val indentSize = (visualDepth * INDENT_WIDTH).dp
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        if (comment.author == "AutoModerator" && false /* auto hide auto mod comments */) {
+            isCollapsed = true
+        }
+    }
 
     Column(
         modifier = modifier.fillMaxWidth()
@@ -123,10 +135,17 @@ fun CommentItem(
                     )
 
                     if (!isCollapsed) {
-                        Text(
-                            text = comment.body,
+                        MarkdownText(
+                            markdown = CommentUtils.sanitize(comment.body),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            onLinkClicked = { link ->
+                                Logger.i(link)
+                                if (link.contains("reddit.com")) {
+                                    Logger.i("reddit url")
+                                } else if (link.startsWith("http://") || link.startsWith("https://")) {
+                                    context.openUrl(link)
+                                }
+                            }
                         )
 
                         CommentActions(
@@ -375,7 +394,7 @@ private fun getDepthColor(depth: Int): Color {
  * The replies field can be empty string, null, or a listing object
  */
 private fun parseCommentReplies(replies: Any?): List<Comment> {
-    return CommentTreeUtils.parseCommentReplies(replies)
+    return CommentUtils.parseCommentReplies(replies)
 }
 
 @Preview

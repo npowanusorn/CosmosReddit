@@ -1,13 +1,12 @@
 package com.hamburghini.cosmos.core.util
 
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.hamburghini.cosmos.data.model.Comment
 
 /**
  * Utilities for parsing and managing Reddit comment trees
  */
-object CommentTreeUtils {
+object CommentUtils {
 
     private val gson = Gson()
 
@@ -217,6 +216,77 @@ object CommentTreeUtils {
             }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    fun sanitize(input: String): String {
+        if (input.isBlank()) return input
+
+        val lines = input.lines()
+        val result = StringBuilder()
+        var inCodeBlock = false
+
+        for (line in lines) {
+            var currentLine = line
+
+            // Toggle fenced code blocks
+            if (currentLine.trim().startsWith("```")) {
+                inCodeBlock = !inCodeBlock
+                result.appendLine(currentLine)
+                continue
+            }
+
+            if (!inCodeBlock) {
+                currentLine = fixHeaders(currentLine)
+                currentLine = fixListSpacing(currentLine)
+                currentLine = fixHorizontalRule(currentLine)
+            }
+
+            result.appendLine(currentLine)
+        }
+
+        return result.toString().trimEnd()
+    }
+
+    /**
+     * Fix headers like:
+     * ##Header -> ## Header
+     */
+    private fun fixHeaders(line: String): String {
+        return line.replace(
+            Regex("^(#{1,6})([^#\\s])"),
+            "$1 $2"
+        )
+    }
+
+    /**
+     * Fix list items:
+     * -item -> - item
+     * *item -> * item
+     */
+    private fun fixListSpacing(line: String): String {
+        return when {
+            line.matches(Regex("^[-+]\\S.*")) ->
+                line.replaceFirst(Regex("^([+-])(\\S)"), "$1 $2")
+
+            line.matches(Regex("^\\*\\S.*")) &&
+                    !line.matches(Regex("^\\*\\*.*\\*\\*$")) &&
+                    !line.matches(Regex("^\\*.*\\*$")) ->
+                line.replaceFirst(Regex("^(\\*)(\\S)"), "$1 $2")
+
+            else -> line
+        }
+    }
+
+    /**
+     * Normalize horizontal rules:
+     * ---text -> ---
+     */
+    private fun fixHorizontalRule(line: String): String {
+        return if (line.trim().matches(Regex("^-{3,}$"))) {
+            "---"
+        } else {
+            line
         }
     }
 }
