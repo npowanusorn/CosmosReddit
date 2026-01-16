@@ -2,7 +2,8 @@ package com.hamburghini.cosmos.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import net.engawapg.lib.zoomable.zoomable
  * @param onTap Callback when image is tapped
  * @param modifier Modifier to be applied
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ZoomableImage(
     imageUrl: String,
@@ -47,7 +49,7 @@ fun ZoomableImage(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
+                LoadingIndicator(
                     color = RedditOrange
                 )
             }

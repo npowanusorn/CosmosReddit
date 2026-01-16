@@ -4,21 +4,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -35,8 +35,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hamburghini.cosmos.core.util.CommentTreeUtils
 import com.hamburghini.cosmos.core.util.PostUtils
@@ -66,6 +68,7 @@ fun CommentItem(
     depth: Int = 0,
     onVote: (String, Int) -> Unit = { _, _ -> },
     onReply: (String) -> Unit = {},
+    onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var currentScore by remember { mutableIntStateOf(comment.score) }
@@ -78,41 +81,36 @@ fun CommentItem(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = indentSize)
+                .padding(start = indentSize),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-            // Depth indicator line
-            if (depth > 0) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .height(if (isCollapsed) 48.dp else 999.dp)
-                        .background(
-                            color = getDepthColor(depth),
-                            shape = RoundedCornerShape(1.dp)
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // Comment content
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max)
             ) {
+                if (depth > 0) {
+                    Box(
+                        modifier = Modifier
+                            .width(5.dp)
+                            .fillMaxHeight()
+                            .background(getDepthColor(depth - 1))
+                    )
+                }
+
+                // Comment content
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .weight(1f)
                         .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Comment header
                     CommentHeader(
                         author = comment.author,
                         timeAgo = PostUtils.formatTimeAgo(comment.created_utc),
@@ -120,7 +118,6 @@ fun CommentItem(
                         onToggleCollapse = { isCollapsed = !isCollapsed }
                     )
 
-                    // Comment body (hidden when collapsed)
                     if (!isCollapsed) {
                         Text(
                             text = comment.body,
@@ -128,7 +125,6 @@ fun CommentItem(
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
-                        // Comment actions
                         CommentActions(
                             score = currentScore,
                             voteState = voteState,
@@ -154,14 +150,15 @@ fun CommentItem(
                                 voteState = if (newVote == 0) null else false
                                 onVote(comment.name, newVote)
                             },
-                            onReply = { onReply(comment.id) }
+                            onReply = { onReply(comment.id) },
+                            onMoreClick = onMoreClick
                         )
                     }
                 }
             }
         }
 
-        // Render child comments (replies) if not collapsed
+        // Child comments
         if (!isCollapsed && comment.replies != null) {
             val childComments = parseCommentReplies(comment.replies)
             childComments.forEach { childComment ->
@@ -211,7 +208,7 @@ private fun CommentHeader(
             }
 
             Text(
-                text = "u/$author",
+                text = author,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -253,7 +250,8 @@ private fun CommentActions(
     voteState: Boolean?,
     onUpvote: () -> Unit,
     onDownvote: () -> Unit,
-    onReply: () -> Unit
+    onReply: () -> Unit,
+    onMoreClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -329,7 +327,7 @@ private fun CommentActions(
             }
 
             IconButton(
-                onClick = { /* TODO: More options */ },
+                onClick = onMoreClick,
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -347,19 +345,18 @@ private fun CommentActions(
  * Get color for depth indicator line based on nesting level
  */
 @Composable
-private fun getDepthColor(depth: Int): androidx.compose.ui.graphics.Color {
+private fun getDepthColor(depth: Int): Color {
     val colors = listOf(
-        RedditOrange,
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.error,
-        MaterialTheme.colorScheme.primaryContainer,
-        MaterialTheme.colorScheme.secondaryContainer,
-        MaterialTheme.colorScheme.tertiaryContainer
+        Color(0xFFFF0000), // Red
+        Color(0xFFFF7F00), // Orange
+        Color(0xFFFFFF00), // Yellow
+        Color(0xFF00FF00), // Green
+        Color(0xFF0000FF), // Blue
+        Color(0xFF4B0082), // Indigo
+        Color(0xFF9400D3)  // Violet
     )
 
-    return colors[depth % colors.size].copy(alpha = 0.6f)
+    return colors[depth % colors.size]
 }
 
 /**
@@ -368,4 +365,21 @@ private fun getDepthColor(depth: Int): androidx.compose.ui.graphics.Color {
  */
 private fun parseCommentReplies(replies: Any?): List<Comment> {
     return CommentTreeUtils.parseCommentReplies(replies)
+}
+
+@Preview
+@Composable
+fun PreviewCommentItem() {
+    CommentItem(
+        comment = Comment.mockComment
+    )
+}
+
+@Preview
+@Composable
+fun PreviewNestedCommentItem() {
+    CommentItem(
+        comment = Comment.mockComment,
+        depth = 1
+    )
 }
