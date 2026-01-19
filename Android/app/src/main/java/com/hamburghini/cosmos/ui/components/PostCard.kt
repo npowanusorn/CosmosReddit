@@ -129,9 +129,9 @@ fun PostCard(
                     post = post,
                     onGalleryClick = {
                         // Launch photo viewer for single image
-                        val imageUrls = PhotoViewerUtils.extractImageUrls(post)
-                        if (imageUrls.isNotEmpty()) {
-                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                        val redditImages = PhotoViewerUtils.extractImageUrls(post)
+                        if (redditImages.isNotEmpty()) {
+                            PhotoViewerUtils.launchPhotoViewer(context, redditImages, 0)
                         }
                     }
                 )

@@ -11,20 +11,20 @@ object PhotoViewerUtils {
      * Launch photo viewer activity
      *
      * @param context Context to launch activity from
-     * @param imageUrls List of image URLs to display
+     * @param redditImage List of image URLs to display
      * @param initialPage Starting page index
      */
     fun launchPhotoViewer(
         context: Context,
-        imageUrls: List<String>,
+        redditImage: List<RedditImage>,
         initialPage: Int = 0
     ) {
-        if (imageUrls.isEmpty()) return
+        if (redditImage.isEmpty()) return
 
         val intent = Intent(context, PhotoViewerActivity::class.java).apply {
-            putStringArrayListExtra(
+            putParcelableArrayListExtra(
                 PhotoViewerActivity.EXTRA_IMAGE_URLS,
-                ArrayList(imageUrls)
+                ArrayList(redditImage)
             )
             putExtra(PhotoViewerActivity.EXTRA_INITIAL_PAGE, initialPage)
         }
@@ -38,40 +38,49 @@ object PhotoViewerUtils {
      * @param post The Reddit post
      * @return List of image URLs
      */
-    fun extractImageUrls(post: Post): List<String> {
-        val imageUrls = mutableListOf<String>()
+    fun extractImageUrls(post: Post): List<RedditImage> {
+        val imageUrls = mutableListOf<RedditImage>()
 
-        Logger.i("extractImageUrls: ${post.title}")
         // Handle gallery posts
-        if (post.is_gallery == true && post.gallery_data != null && post.media_metadata != null) {
+        if (
+            post.is_gallery == true &&
+            post.gallery_data != null &&
+            post.media_metadata != null
+        ) {
             post.gallery_data.items.forEach { galleryItem ->
-                post.media_metadata[galleryItem.mediaId]?.let { metadata ->
-                    (metadata.mediaSource.url ?: metadata.mediaSource.gif)?.let { url ->
-                        val imageUrl = url
-                            .replace("&amp;", "&")
-                            .replace("preview.redd.it", "i.redd.it")
-                        imageUrls.add(imageUrl)
-                    }
-                }
+                val metadata = post.media_metadata[galleryItem.mediaId] ?: return@forEach
+
+                val source = metadata.mediaSource
+                val previews = metadata.downscaledSource
+
+                val fullUrl = source.url
+                    ?.decodeHtml()
+                    ?.replace("preview.redd.it", "i.redd.it")
+                    ?: source.gif?.decodeHtml()
+                    ?: return@forEach
+
+                val placeholderUrl = previews
+                    .minByOrNull { it.width }
+                    ?.url
+                    ?.decodeHtml()
+                    ?.replace("preview.redd.it", "i.redd.it")
+                    ?: fullUrl
+
+                imageUrls.add(
+                    RedditImage(
+                        placeholderUrl = placeholderUrl,
+                        fullUrl = fullUrl,
+                        width = source.width,
+                        height = source.height
+                    )
+                )
             }
         }
 
         // Handle single image posts
         if (imageUrls.isEmpty() && post.post_hint == "image") {
-            PostUtils.getImageUrl(post)?.let { imageUrl ->
-                imageUrls.add(imageUrl)
-            }
-        }
-
-        // Handle preview images as fallback
-        if (imageUrls.isEmpty() && post.preview?.images?.isNotEmpty() == true) {
-            post.preview.images.forEach { image ->
-                image.source?.url?.let { url ->
-                    val cleanUrl = url.replace("&amp;", "&")
-                    if (cleanUrl !in imageUrls) {
-                        imageUrls.add(cleanUrl)
-                    }
-                }
+            PostUtils.getRedditImage(post)?.let { image ->
+                imageUrls.add(image)
             }
         }
 
@@ -84,21 +93,21 @@ object PhotoViewerUtils {
      * @param post The Reddit post
      * @return True if post has images that can be viewed
      */
-    fun hasViewableImages(post: Post): Boolean {
-        return when {
-            // Gallery posts
-            post.is_gallery == true && post.gallery_data != null && post.media_metadata != null -> {
-                post.gallery_data.items.isNotEmpty()
-            }
-            // Single image posts
-            post.post_hint == "image" -> {
-                PostUtils.getImageUrl(post) != null
-            }
-            // Preview images
-            post.preview?.images?.isNotEmpty() == true -> true
-            else -> false
-        }
-    }
+//    fun hasViewableImages(post: Post): Boolean {
+//        return when {
+//            // Gallery posts
+//            post.is_gallery == true && post.gallery_data != null && post.media_metadata != null -> {
+//                post.gallery_data.items.isNotEmpty()
+//            }
+//            // Single image posts
+//            post.post_hint == "image" -> {
+//                PostUtils.getImageUrl(post) != null
+//            }
+//            // Preview images
+//            post.preview?.images?.isNotEmpty() == true -> true
+//            else -> false
+//        }
+//    }
 
     /**
      * Get the best quality image URL from post

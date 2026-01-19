@@ -59,7 +59,7 @@ fun PostGalleryContent(
     post: Post,
     onGalleryClick: (Int) -> Unit
 ) {
-    val imageUrls = PhotoViewerUtils.extractImageUrls(post)
+    val redditImages = PhotoViewerUtils.extractImageUrls(post)
 
     var revealed by remember { mutableStateOf(false) }
     val isBlurred = (post.over_18 || post.spoiler == true) && !revealed
@@ -73,7 +73,7 @@ fun PostGalleryContent(
     ) {
 
         ImagePreviewGrid(
-            imageUrls = imageUrls,
+            redditImages = redditImages,
             onClick = { index ->
                 if (isBlurred) {
                     revealed = true

@@ -1,8 +1,18 @@
 package com.hamburghini.cosmos.core.util
 
+import android.os.Parcelable
 import com.hamburghini.cosmos.data.model.Post
+import kotlinx.parcelize.Parcelize
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
+@Parcelize
+data class RedditImage(
+    val placeholderUrl: String,
+    val fullUrl: String,
+    val width: Int,
+    val height: Int
+) : Parcelable
 
 object PostUtils {
 
@@ -72,9 +82,25 @@ object PostUtils {
         }
     }
 
-    fun getImageUrl(post: Post): String? {
-        // Try to get the best quality image URL
-        return post.preview?.images?.firstOrNull()?.source?.url?.replace("&amp;", "&")
+    fun getRedditImage(post: Post): RedditImage? {
+        val image = post.preview?.images?.firstOrNull() ?: return null
+
+        val source = image.source ?: return null
+        val resolutions = image.resolutions ?: return null
+
+        val fullUrl = source.url.decodeHtml()
+        val placeholder = resolutions
+            .minByOrNull { it.width }
+            ?.url
+            ?.decodeHtml()
+            ?: fullUrl
+
+        return RedditImage(
+            placeholderUrl = placeholder,
+            fullUrl = fullUrl,
+            width = source.width,
+            height = source.height
+        )
     }
 
     fun getThumbnailUrl(post: Post): Pair<String, Float>? {

@@ -1,7 +1,7 @@
 package com.hamburghini.cosmos.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -13,26 +13,15 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.hamburghini.cosmos.core.util.RedditImage
-import net.engawapg.lib.zoomable.rememberZoomState
-import net.engawapg.lib.zoomable.zoomable
 
-/**
- * Zoomable image component with pinch-to-zoom and double-tap gestures
- *
- * @param redditImage URL of the image to display
- * @param onTap Callback when image is tapped
- * @param modifier Modifier to be applied
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ZoomableImage(
+fun RedditAsyncImage(
     redditImage: RedditImage,
-    onTap: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale,
+    onClick: () -> Unit
 ) {
     val context = LocalContext.current
-
-    val zoomState = rememberZoomState()
 
     SubcomposeAsyncImage(
         model = ImageRequest.Builder(context)
@@ -40,28 +29,19 @@ fun ZoomableImage(
             .crossfade(true)
             .build(),
         contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = modifier
-            .fillMaxSize()
-            .zoomable(
-                zoomState = zoomState,
-                onTap = { onTap() }
-            ),
-        onSuccess = { state ->
-            zoomState.setContentSize(state.painter.intrinsicSize)
-        },
+        contentScale = contentScale,
+        modifier = modifier.clickable(onClick = onClick),
         loading = {
-            // 1️⃣ Low-res blurred placeholder
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(redditImage.placeholderUrl)
                     .crossfade(false)
                     .build(),
                 contentDescription = null,
-                contentScale = ContentScale.Fit,
+                contentScale = contentScale,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(24.dp)
+                    .blur(20.dp)
             )
         }
     )

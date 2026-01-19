@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hamburghini.cosmos.core.util.RedditImage
 import com.hamburghini.cosmos.ui.components.ZoomableImage
 
 /**
@@ -37,15 +38,15 @@ import com.hamburghini.cosmos.ui.components.ZoomableImage
  */
 @Composable
 fun PhotoViewerScreen(
-    imageUrls: List<String>,
+    redditImages: List<RedditImage>,
     initialPage: Int = 0,
     onBackClick: () -> Unit
 ) {
     var showUI by remember { mutableStateOf(true) }
 
     val pagerState = rememberPagerState(
-        initialPage = initialPage.coerceIn(0, imageUrls.size - 1),
-        pageCount = { imageUrls.size }
+        initialPage = initialPage.coerceIn(0, redditImages.size - 1),
+        pageCount = { redditImages.size }
     )
 
     Box(
@@ -59,7 +60,7 @@ fun PhotoViewerScreen(
             modifier = Modifier.fillMaxSize()
         ) { page ->
             ZoomableImage(
-                imageUrl = imageUrls[page],
+                redditImage = redditImages[page],
                 onTap = { showUI = !showUI },
                 modifier = Modifier.fillMaxSize()
             )
@@ -74,7 +75,7 @@ fun PhotoViewerScreen(
         ) {
             PhotoViewerTopBar(
                 currentPage = pagerState.currentPage + 1,
-                totalPages = imageUrls.size,
+                totalPages = redditImages.size,
                 onBackClick = onBackClick,
                 modifier = Modifier
                     .statusBarsPadding()

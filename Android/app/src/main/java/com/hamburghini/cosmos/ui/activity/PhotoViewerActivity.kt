@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.hamburghini.cosmos.core.util.RedditImage
 import com.hamburghini.cosmos.ui.screens.photoviewer.PhotoViewerScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,11 +33,11 @@ class PhotoViewerActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // Get image URLs from intent
-        val imageUrls = intent.getStringArrayListExtra(EXTRA_IMAGE_URLS) ?: emptyList()
+        val redditImages = intent.getParcelableArrayListExtra(EXTRA_IMAGE_URLS, RedditImage::class.java) ?: arrayListOf()
         val initialPage = intent.getIntExtra(EXTRA_INITIAL_PAGE, 0)
 
         // If no images provided, finish activity
-        if (imageUrls.isEmpty()) {
+        if (redditImages.isEmpty()) {
             finish()
             return
         }
@@ -49,7 +50,7 @@ class PhotoViewerActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     PhotoViewerScreen(
-                        imageUrls = imageUrls,
+                        redditImages = redditImages,
                         initialPage = initialPage,
                         onBackClick = { finish() }
                     )
