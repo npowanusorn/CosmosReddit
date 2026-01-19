@@ -1,10 +1,12 @@
 package com.hamburghini.cosmos.data.repository
 
-import android.util.Log
+import com.hamburghini.cosmos.core.network.RetrofitClient
 import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.model.Comment
 import com.hamburghini.cosmos.data.model.RedditListingResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,7 +38,7 @@ class CommentsRepository @Inject constructor(
 
         return MutableStateFlow(currentCache[postId] ?: CommentsState.NotLoaded).apply {
             // Update when cache changes
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+            CoroutineScope(Dispatchers.Main).launch {
                 _commentsCache.collect { cache ->
                     cache[postId]?.let { value = it }
                 }
@@ -69,7 +71,7 @@ class CommentsRepository @Inject constructor(
                     ?: throw IllegalStateException("User not logged in")
                 apiService.getPostComments(subreddit, postId, sort.value, limit = 200)
             } else {
-                val apiService = com.hamburghini.cosmos.core.network.RetrofitClient.publicRedditApiService
+                val apiService = RetrofitClient.publicRedditApiService
                 apiService.getPostComments(subreddit, postId, sort.value, limit = 200)
             }
 
@@ -122,7 +124,7 @@ class CommentsRepository @Inject constructor(
                     ?: throw IllegalStateException("User not logged in")
                 apiService.getMoreComments(linkId, childrenStr, sort.value)
             } else {
-                val apiService = com.hamburghini.cosmos.core.network.RetrofitClient.publicRedditApiService
+                val apiService = RetrofitClient.publicRedditApiService
                 apiService.getMoreComments(linkId, childrenStr, sort.value)
             }
 
@@ -447,16 +449,16 @@ class CommentsRepository @Inject constructor(
 }
 
 /**
- * Sealed class representing different states of comments for a post
+ * Sealed interface representing different states of comments for a post
  */
-sealed class CommentsState {
-    data object NotLoaded : CommentsState()
-    data object Loading : CommentsState()
+sealed interface CommentsState {
+    data object NotLoaded : CommentsState
+    data object Loading : CommentsState
     data class Loaded(
         val comments: List<Comment>,
         val sort: CommentSort
-    ) : CommentsState()
-    data class Error(val message: String) : CommentsState()
+    ) : CommentsState
+    data class Error(val message: String) : CommentsState
 }
 
 /**

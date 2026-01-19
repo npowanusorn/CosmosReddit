@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hamburghini.cosmos.core.constants.Constants
-import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.components.RedditTopAppBar
@@ -39,27 +39,27 @@ import com.hamburghini.cosmos.ui.screens.postdetail.PostDetailScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
 import com.hamburghini.cosmos.ui.screens.postdetail.PostDetailViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class PostDetailActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val post = intent.getParcelableExtra(Constants.CLICKED_POST_PARCELABLE, Post::class.java)
-        if (post == null) {
+        val postName = intent.getStringExtra(Constants.CLICKED_POST_NAME)
+        if (postName == null) {
             Toast.makeText(this, "Error opening this post", Toast.LENGTH_SHORT).show()
             return finish()
         }
         setContent {
             val viewModel: PostDetailViewModel = hiltViewModel()
+            val post by viewModel.post.collectAsState()
             var showPostMenu by remember { mutableStateOf(false) }
             val coroutineScope = rememberCoroutineScope()
             val context = LocalContext.current
             val snackbarHostState = remember { SnackbarHostState() }
 
             LaunchedEffect(Unit) {
-                viewModel.setPost(post)
+                viewModel.setPostName(postName)
             }
 
             CosmosTheme {
@@ -101,62 +101,63 @@ class PostDetailActivity : ComponentActivity() {
 
                     if (showPostMenu) {
                         PostMenuBottomSheet(
-                            post = post,
+                            post = post!!,
                             isLoggedIn = viewModel.isLoggedIn(),
                             onDismissRequest = {
                                 showPostMenu = false
                             },
                             onSaveClick = {
                                 // Toggle save state
-                                val newSaveState = !post.saved
-                                viewModel.savePost(post.name, newSaveState)
-
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        if (newSaveState) "Post saved" else "Post unsaved"
-                                    )
-                                }
+                                TODO("Toggle save state")
+//                                val newSaveState = !post.saved
+//                                viewModel.savePost(post.name, newSaveState)
+//
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar(
+//                                        if (newSaveState) "Post saved" else "Post unsaved"
+//                                    )
+//                                }
                             },
                             onHideClick = {
-                                // TODO: Implement hide functionality
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        if (post.hidden == true) "TODO: Post unhidden" else "TODO: Post hidden"
-                                    )
-                                }
+                                TODO("Implement hide functionality")
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar(
+//                                        if (post.hidden == true) "TODO: Post unhidden" else "TODO: Post hidden"
+//                                    )
+//                                }
                             },
                             onReportClick = {
-                                // TODO: Navigate to report screen
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Report functionality coming soon")
-                                }
+                                TODO("Navigate to report screen")
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar("Report functionality coming soon")
+//                                }
                             },
                             onShareClick = {
-                                sharePost(context, post)
+//                                sharePost(context, post)
                             },
                             onCopyLinkClick = {
-                                copyPostLink(context, post)
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Link copied to clipboard")
-                                }
+//                                copyPostLink(context, post)
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar("Link copied to clipboard")
+//                                }
                             },
                             onBlockUserClick = {
-                                // TODO: Implement block user functionality
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Block user functionality coming soon")
-                                }
+                                TODO("Implement block user functionality")
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar("Block user functionality coming soon")
+//                                }
                             },
                             onViewProfileClick = {
-                                // TODO: Navigate to user profile
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Navigate to u/${post.author}")
-                                }
+                                TODO("Navigate to user profile")
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar("Navigate to u/${post.author}")
+//                                }
                             },
                             onViewSubredditClick = {
-                                // TODO: Navigate to subreddit
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Navigate to ${post.subreddit_name_prefixed}")
-                                }
+                                TODO("Navigate to subreddit")
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar("Navigate to ${post.subreddit_name_prefixed}")
+//                                }
                             }
                         )
                     }

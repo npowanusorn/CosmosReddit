@@ -13,7 +13,7 @@ data class Post(
     @SerializedName("subreddit") val subreddit: String,
     @SerializedName("subreddit_id") val subreddit_id: String,
     @SerializedName("subreddit_name_prefixed") val subreddit_name_prefixed: String,
-    @SerializedName("score") var score: Int,
+    @SerializedName("score") val score: Int,
     @SerializedName("num_comments") val num_comments: Int,
     @SerializedName("permalink") val permalink: String,
     @SerializedName("url") val url: String, // URL to the content (image, external link, etc.)
@@ -21,7 +21,7 @@ data class Post(
     @SerializedName("created_utc") val created_utc: Long, // Unix timestamp in UTC
     @SerializedName("selftext") val selftext: String?, // Raw markdown content of a text post
     @SerializedName("selftext_html") val selftext_html: String?, // HTML rendered markdown content
-    @SerializedName("likes") var likes: Boolean?, // true if upvoted, false if downvoted, null if no vote. Make mutable.
+    @SerializedName("likes") val likes: Boolean?, // true if upvoted, false if downvoted, null if no vote. Make mutable.
     @SerializedName("saved") val saved: Boolean, // true if saved, false otherwise
     @SerializedName("preview") val preview: Preview?,
     @SerializedName("post_hint") val post_hint: String?, // "image", "link", "hosted:video", etc.

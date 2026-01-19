@@ -1,6 +1,7 @@
 package com.hamburghini.cosmos.core.network
 
 import android.util.Base64
+import com.hamburghini.cosmos.BuildConfig
 import com.hamburghini.cosmos.core.constants.Constants
 import kotlinx.coroutines.runBlocking
 import okhttp3.Authenticator
@@ -64,6 +65,7 @@ object RetrofitClient {
         val newRequest = if (accessToken != null) {
             originalRequest.newBuilder()
                 .header("Authorization", "Bearer $accessToken")
+                .header("User-Agent", "android:com.hamburghini.cosmos:v${BuildConfig.VERSION_NAME}")
                 .build()
         } else {
             originalRequest
@@ -96,6 +98,7 @@ object RetrofitClient {
                     // Retry the request with new token
                     response.request.newBuilder()
                         .header("Authorization", "Bearer ${refreshResult.accessToken}")
+                        .header("User-Agent", "android:com.hamburghini.cosmos:v${BuildConfig.VERSION_NAME}")
                         .build()
                 }
                 is RefreshResult.Failure, null -> null

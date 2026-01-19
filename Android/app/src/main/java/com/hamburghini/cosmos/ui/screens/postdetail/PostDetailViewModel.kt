@@ -3,16 +3,25 @@ package com.hamburghini.cosmos.ui.screens.postdetail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hamburghini.cosmos.core.constants.Constants
 import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.model.Post
+import com.hamburghini.cosmos.data.repository.ActionResult
 import com.hamburghini.cosmos.data.repository.CommentSort
 import com.hamburghini.cosmos.data.repository.CommentsRepository
 import com.hamburghini.cosmos.data.repository.CommentsState
+import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.RedditRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,7 +33,23 @@ class PostDetailViewModel @Inject constructor(
     private val profileManager: ProfileManager
 ) : ViewModel() {
 
-    val post: StateFlow<Post?> = savedStateHandle.getStateFlow("post", null)
+    private val postName = MutableStateFlow<String?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val post: StateFlow<Post?> =
+        postName
+            .filterNotNull()
+            .flatMapLatest { name ->
+                redditRepository.postsState.map { state ->
+                    (state as? PostsState.Success)?.posts?.get(name)
+                }
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                null
+            )
+
 
     private val _commentsState = MutableStateFlow<CommentsState>(CommentsState.NotLoaded)
     val commentsState: StateFlow<CommentsState> = _commentsState.asStateFlow()
@@ -35,9 +60,8 @@ class PostDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PostDetailUiState())
     val uiState: StateFlow<PostDetailUiState> = _uiState.asStateFlow()
 
-    fun setPost(post: Post) {
-        savedStateHandle["post"] = post
-        loadComments()
+    fun setPostName(name: String) {
+        postName.value = name
     }
 
     fun loadComments(sort: CommentSort = _currentSort.value, forceRefresh: Boolean = false) {
@@ -133,9 +157,9 @@ class PostDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             val result = redditRepository.vote(currentPost.name, direction)
-            if (!result.isSuccessful) {
+            if (result is ActionResult.Failure) {
                 _uiState.value = _uiState.value.copy(
-                    error = "Failed to vote: ${result.code()}"
+                    error = "Failed to vote: ${result.reason}"
                 )
             }
         }

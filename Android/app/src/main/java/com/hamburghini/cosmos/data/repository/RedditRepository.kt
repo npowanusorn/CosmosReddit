@@ -11,6 +11,11 @@ import com.hamburghini.cosmos.data.model.RedditObject
 import com.hamburghini.cosmos.data.model.SubredditAbout
 import com.hamburghini.cosmos.data.model.SubredditAboutData
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -22,6 +27,11 @@ class RedditRepository @Inject constructor(
     private val profileManager: ProfileManager,
     private val subscriptionCacheManager: SubscriptionCacheManager
 ) {
+
+    private val _postsState = MutableStateFlow<PostsState>(PostsState.Idle)
+    val postsState: StateFlow<PostsState> = _postsState.asStateFlow()
+
+    // ==================== API Service ====================
 
     // Use RetrofitClient's public API service
     private val publicApiService = RetrofitClient.publicRedditApiService
@@ -35,24 +45,26 @@ class RedditRepository @Inject constructor(
         subreddit: String = "all",
         after: String? = null,
         limit: Int = 25
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            publicApiService.getHotPosts(subreddit, after, limit)
-        } catch (e: Exception) {
-            throw e
-        }
+    ) {
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = publicApiService.getHotPosts(subreddit, after, limit)
+        handlePostsResponse(response, SortType.HOT)
     }
 
     suspend fun getNewPosts(
         subreddit: String = "all",
         after: String? = null,
         limit: Int = 25
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            publicApiService.getNewPosts(subreddit, after, limit)
-        } catch (e: Exception) {
-            throw e
-        }
+    ) {
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = publicApiService.getNewPosts(subreddit, after, limit)
+        handlePostsResponse(response, SortType.NEW)
     }
 
     suspend fun getTopPosts(
@@ -60,24 +72,26 @@ class RedditRepository @Inject constructor(
         time: String = "day",
         after: String? = null,
         limit: Int = 25
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            publicApiService.getTopPosts(subreddit, time, after, limit)
-        } catch (e: Exception) {
-            throw e
-        }
+    ) {
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = publicApiService.getTopPosts(subreddit, time, after, limit)
+        handlePostsResponse(response, SortType.TOP)
     }
 
     suspend fun getRisingPosts(
         subreddit: String = "all",
         after: String? = null,
         limit: Int = 25
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            publicApiService.getRisingPosts(subreddit, after, limit)
-        } catch (e: Exception) {
-            throw e
-        }
+    ) {
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = publicApiService.getRisingPosts(subreddit, after, limit)
+        handlePostsResponse(response, SortType.RISING)
     }
 
     // ==================== Authenticated Posts Endpoints ====================
@@ -85,95 +99,179 @@ class RedditRepository @Inject constructor(
     suspend fun getMyHotPosts(
         after: String? = null,
         limit: Int = 25
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            if (!profileManager.isLoggedIn()) {
-                throw IllegalStateException("User not logged in")
-            }
-            // Token is automatically added by RetrofitClient's auth interceptor
-            authenticatedApiService.getMyHotPosts(after, limit)
-        } catch (e: Exception) {
-            throw e
+    ) {
+        if (!profileManager.isLoggedIn()) {
+            throw IllegalStateException("User not logged in")
         }
+
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = authenticatedApiService.getMyHotPosts(after, limit)
+        handlePostsResponse(response, SortType.HOT)
     }
 
     suspend fun getMyBestPosts(
         after: String? = null,
         limit: Int = 25
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            if (!profileManager.isLoggedIn()) {
-                throw IllegalStateException("User not logged in")
-            }
-            authenticatedApiService.getMyBestPosts(after, limit)
-        } catch (e: Exception) {
-            throw e
+    ) {
+        if (!profileManager.isLoggedIn()) {
+            throw IllegalStateException("User not logged in")
         }
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = authenticatedApiService.getMyBestPosts(after, limit)
+        handlePostsResponse(response, SortType.BEST)
     }
 
     suspend fun getMyNewPosts(
         after: String? = null,
         limit: Int = 25
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            if (!profileManager.isLoggedIn()) {
-                throw IllegalStateException("User not logged in")
-            }
-            authenticatedApiService.getMyNewPosts(after, limit)
-        } catch (e: Exception) {
-            throw e
+    ) {
+        if (!profileManager.isLoggedIn()) {
+            throw IllegalStateException("User not logged in")
         }
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = authenticatedApiService.getMyNewPosts(after, limit)
+        handlePostsResponse(response, SortType.NEW)
     }
 
     suspend fun getMyTopPosts(
         after: String? = null,
         limit: Int = 25,
         timeframe: String = "day"
-    ): Response<RedditListingResponse<Post>> {
-        return try {
-            if (!profileManager.isLoggedIn()) {
-                throw IllegalStateException("User not logged in")
+    ) {
+        if (!profileManager.isLoggedIn()) {
+            throw IllegalStateException("User not logged in")
+        }
+        _postsState.value = PostsState.Loading(
+            previous = _postsState.value as? PostsState.Success
+        )
+
+        val response = authenticatedApiService.getMyTopPosts(after, limit, timeframe)
+        handlePostsResponse(response, SortType.TOP)
+    }
+
+    private fun handlePostsResponse(
+        response: Response<RedditListingResponse<Post>>,
+        sortType: SortType
+    ) {
+        try {
+            if (response.isSuccessful) {
+                val listing = response.body()
+                if (listing != null) {
+                    val newPosts = listing.data.children.map { it.data }
+                    val newMap: Map<String, Post> = newPosts.associateBy { it.name }
+                    _postsState.value = PostsState.Success(
+                        posts = newMap,
+                        sortType = sortType,
+                        currentAfter = listing.data.after
+                    )
+                } else {
+                    _postsState.value = PostsState.Error(
+                        message = "No data received",
+                        previous = _postsState.value as? PostsState.Success
+                    )
+                }
+            } else {
+                val errorMessage = when (response.code()) {
+                    403 -> "Access denied - check permissions"
+                    429 -> "Too many requests - please wait"
+                    500, 502, 503 -> "Reddit server error - try again later"
+                    else -> "Failed to load posts (${response.code()})"
+                }
+
+                _postsState.value = PostsState.Error(
+                    message = errorMessage,
+                    previous = _postsState.value as? PostsState.Success
+                )
             }
-            authenticatedApiService.getMyTopPosts(after, limit, timeframe)
         } catch (e: Exception) {
-            throw e
+            _postsState.value = PostsState.Error(
+                message = e.message ?: "Failed to load posts",
+                previous = _postsState.value as? PostsState.Success
+            )
         }
     }
 
     // ==================== Voting Functionality ====================
 
-    suspend fun vote(postId: String, direction: Int): Response<ResponseBody> {
+    suspend fun vote(postId: String, direction: Int): ActionResult {
+        if (!profileManager.isLoggedIn()) {
+            throw IllegalStateException("User not logged in")
+        }
+
+        Logger.d("vote: $postId, $direction")
+        val prevLikes = currentLikes(postId)
+        updatePost(postId) { post ->
+            Logger.d("updating post: ${post.name}")
+            post.copy(
+                likes = directionToLikes(direction),
+                score = post.score + scoreDelta(prevLikes, direction)
+            )
+        }
         return try {
-            if (!profileManager.isLoggedIn()) {
-                throw IllegalStateException("User not logged in")
+            val response = authenticatedApiService.vote(postId, direction)
+            if (response.isSuccessful) {
+                ActionResult.Success
+            } else {
+                rollbackVote(postId, prevLikes)
+                ActionResult.Failure("Vote failure")
             }
-            authenticatedApiService.vote(postId, direction)
         } catch (e: Exception) {
-            throw e
+            Logger.e("Failed to vote: ${e.message}")
+            rollbackVote(postId, prevLikes)
+            ActionResult.Failure("Vote failure: ${e.message}")
         }
     }
 
     // ==================== Save/Unsave Functionality ====================
 
-    suspend fun savePost(postId: String): Response<ResponseBody> {
+    suspend fun savePost(postId: String): ActionResult {
+        if (!profileManager.isLoggedIn()) {
+            throw IllegalStateException("User not logged in")
+        }
+
+        updatePost(postId) { it.copy(saved = true) }
         return try {
-            if (!profileManager.isLoggedIn()) {
-                throw IllegalStateException("User not logged in")
+            val response = authenticatedApiService.save(postId)
+            if (response.isSuccessful) {
+                ActionResult.Success
+            } else {
+                updatePost(postId) { it.copy(saved = false) }
+                ActionResult.Failure("Failed to save post")
             }
-            authenticatedApiService.save(postId)
         } catch (e: Exception) {
-            throw e
+            Logger.e("Save post error: ${e.message}")
+            updatePost(postId) { it.copy(saved = false) }
+            ActionResult.Failure("Failed to save post: ${e.message}")
         }
     }
 
-    suspend fun unsavePost(postId: String): Response<ResponseBody> {
+    suspend fun unsavePost(postId: String): ActionResult {
+        if (!profileManager.isLoggedIn()) {
+            throw IllegalStateException("User not logged in")
+        }
+
+        updatePost(postId) { it.copy(saved = false) }
         return try {
-            if (!profileManager.isLoggedIn()) {
-                throw IllegalStateException("User not logged in")
+            val response = authenticatedApiService.unsave(postId)
+            if (response.isSuccessful) {
+                ActionResult.Success
+            } else {
+                updatePost(postId) { it.copy(saved = true) }
+                ActionResult.Failure("Failed to unsave post")
             }
-            authenticatedApiService.unsave(postId)
         } catch (e: Exception) {
-            throw e
+            Logger.e("Unsave post error: ${e.message}")
+            updatePost(postId) { it.copy(saved = true) }
+            ActionResult.Failure("Failed to unsave post")
         }
     }
 
@@ -185,6 +283,75 @@ class RedditRepository @Inject constructor(
 
     fun getCurrentUsername(): String {
         return profileManager.getDisplayUsername()
+    }
+
+    private fun updatePost(
+        postId: String,
+        transform: (Post) -> Post
+    ) {
+        val current = _postsState.value
+        if (current !is PostsState.Success) return
+
+        val updatedMap = current.posts.toMutableMap()
+        updatedMap[postId]?.let { targetPost ->
+            updatedMap[postId] = transform(targetPost)
+        }
+        _postsState.value = current.copy(posts = updatedMap)
+    }
+
+    private fun rollbackVote(
+        postId: String,
+        prevLikes: Boolean?
+    ) {
+        updatePost(postId) { post ->
+            val currentLikes = post.likes
+            val rollbackDelta =
+                scoreDelta(currentLikes, prevDirection(prevLikes))
+
+            post.copy(
+                likes = prevLikes,
+                score = post.score + rollbackDelta
+            )
+        }
+    }
+
+    private fun prevDirection(prev: Boolean?): Int =
+        when (prev) {
+            true -> 1
+            false -> -1
+            null -> 0
+        }
+
+    private fun currentLikes(postId: String): Boolean? {
+        val state = _postsState.value
+        if (state !is PostsState.Success) return null
+
+        return state.posts[postId]?.likes
+    }
+
+    private fun directionToLikes(direction: Int): Boolean? =
+        when (direction) {
+            1 -> true
+            -1 -> false
+            0 -> null
+            else -> null
+        }
+
+    private fun scoreDelta(
+        prev: Boolean?,
+        direction: Int
+    ): Int {
+        val next = directionToLikes(direction)
+
+        return when (prev) {
+            null if next == true -> +1
+            null if next == false -> -1
+            true if next == null -> -1
+            false if next == null -> +1
+            true if next == false -> -2
+            false if next == true -> +2
+            else -> 0
+        }
     }
 
     // ==================== Subscriptions with Caching ====================
@@ -339,4 +506,29 @@ class RedditRepository @Inject constructor(
         val username = profileManager.getCurrentAccount()?.username ?: return false
         return subscriptionCacheManager.clearCache(username)
     }
+}
+
+sealed interface PostsState {
+    data object Idle : PostsState
+    data class Loading(
+        val previous: Success? = null
+    ) : PostsState
+    data class Success(
+        val posts: Map<String, Post>,
+        val sortType: SortType,
+        val currentAfter: String?
+    ) : PostsState
+    data class Error(
+        val message: String,
+        val previous: Success? = null
+    ) : PostsState
+}
+
+sealed interface ActionResult {
+    data object Success : ActionResult
+    data class Failure(val reason: String) : ActionResult
+}
+
+enum class SortType {
+    HOT, BEST, NEW, TOP, RISING
 }

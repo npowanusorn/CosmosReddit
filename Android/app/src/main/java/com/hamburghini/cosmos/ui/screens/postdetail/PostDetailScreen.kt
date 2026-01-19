@@ -1,9 +1,6 @@
 package com.hamburghini.cosmos.ui.screens.postdetail
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -63,7 +63,13 @@ fun PostDetailScreen(
         post?.let { currentPost ->
             PostDetailContent(
                 currentPost = currentPost,
-                commentsState = commentsState
+                commentsState = commentsState,
+                onUpvote = { direction ->
+                    viewModel.voteOnPost(direction)
+                },
+                onDownvote = { direction ->
+                    viewModel.voteOnPost(direction)
+                }
             )
         }
     }
@@ -73,7 +79,9 @@ fun PostDetailScreen(
 @Composable
 private fun PostDetailContent(
     currentPost: Post,
-    commentsState: CommentsState
+    commentsState: CommentsState,
+    onUpvote: (Int) -> Unit,
+    onDownvote: (Int) -> Unit
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -88,10 +96,8 @@ private fun PostDetailContent(
             item {
                 PostDetailCard(
                     post = currentPost,
-                    currentScore = currentPost.score,
-                    voteState = currentPost.likes,
-                    onUpvote = { /* ... */ },
-                    onDownvote = { /* ... */ },
+                    onUpvote = onUpvote,
+                    onDownvote = onDownvote,
                     context = context
                 )
             }
@@ -190,13 +196,14 @@ private fun PostDetailContent(
 @Composable
 private fun PostDetailCard(
     post: Post,
-    currentScore: Int,
-    voteState: Boolean?,
-    onUpvote: () -> Unit,
-    onDownvote: () -> Unit,
+    onUpvote: (Int) -> Unit,
+    onDownvote: (Int) -> Unit,
     context: Context
 ) {
     val postType = PostUtils.getPostType(post)
+
+    var currentScore by remember { mutableIntStateOf(post.score) }
+    var voteState by remember { mutableStateOf(post.likes) } // null = no vote, true = upvoted, false = downvoted
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -263,8 +270,30 @@ private fun PostDetailCard(
             post = post,
             currentScore = currentScore,
             voteState = voteState,
-            onUpvote = onUpvote,
-            onDownvote = onDownvote,
+            onUpvote = {
+                val newVote = if (voteState == true) 0 else 1
+                val scoreDiff = when (voteState) {
+                    true if newVote == 0 -> -1 // Remove upvote
+                    false -> 2 // Change from downvote to upvote
+                    null -> 1 // Add upvote
+                    else -> 0
+                }
+                currentScore += scoreDiff
+                voteState = if (newVote == 0) null else true
+                onUpvote(newVote)
+            },
+            onDownvote = {
+                val newVote = if (voteState == false) 0 else -1
+                val scoreDiff = when (voteState) {
+                    false if newVote == 0 -> 1 // Remove downvote
+                    true -> -2 // Change from upvote to downvote
+                    null -> -1 // Add downvote
+                    else -> 0
+                }
+                currentScore += scoreDiff
+                voteState = if (newVote == 0) null else false
+                onDownvote(newVote)
+            },
             onMenuClick = null
         )
     }
@@ -278,6 +307,8 @@ private fun PostDetailCard(
 fun PreviewPostDetailScreen() {
     PostDetailContent(
         currentPost = Post.mock.copy(likes = false),
-        commentsState = CommentsState.Loaded(listOf(), CommentSort.CONFIDENCE)
+        commentsState = CommentsState.Loaded(listOf(), CommentSort.CONFIDENCE),
+        onUpvote = {},
+        onDownvote = {}
     )
 }

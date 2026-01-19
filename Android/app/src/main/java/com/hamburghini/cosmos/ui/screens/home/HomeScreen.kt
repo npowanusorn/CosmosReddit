@@ -63,6 +63,8 @@ import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.Logger
+import com.hamburghini.cosmos.data.repository.PostsState
+import com.hamburghini.cosmos.data.repository.SortType
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -71,7 +73,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val posts by viewModel.posts.collectAsState()
+    val postsState by viewModel.postsState.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -93,7 +95,7 @@ fun HomeScreen(
 
         if (lastVisibleIndex != null &&
             lastVisibleIndex >= totalItems - 3 &&
-            !uiState.isLoading &&
+            postsState !is PostsState.Loading &&
             !uiState.isLoadingMore &&
             uiState.hasMore) {
             viewModel.loadMorePosts()
@@ -102,7 +104,7 @@ fun HomeScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
-            isRefreshing = uiState.isLoading,
+            isRefreshing = postsState is PostsState.Loading,
             onRefresh = { viewModel.refreshPosts() },
             modifier = Modifier.fillMaxSize()
         ) {
@@ -127,18 +129,18 @@ fun HomeScreen(
                     )
                 }
 
-                if (uiState.error != null && posts.isEmpty()) {
-                    item {
-                        ErrorMessage(
-                            error = "${uiState.error}",
-                            onRetry = { viewModel.refreshPosts() },
-                            onDismiss = { viewModel.clearError() }
-                        )
-                    }
-                } else {
+                val content: PostsState? = when (postsState) {
+                    is PostsState.Error -> (postsState as PostsState.Error).previous
+                    is PostsState.Loading -> (postsState as PostsState.Loading).previous
+                    is PostsState.Success -> postsState
+                    else -> null
+                }
+
+                if (content != null) {
+                    val posts = (content as PostsState.Success).posts
                     items(
-                        items = posts,
-                        key = { post -> post.id }
+                        items = posts.values.toList(),
+                        key = { post -> post.name }
                     ) { post ->
                         PostCard(
                             post = post,
@@ -146,7 +148,7 @@ fun HomeScreen(
                                 println("Post clicked: ${clickedPost.title}")
                                 context.startActivity(
                                     Intent(context, PostDetailActivity::class.java).apply {
-                                        putExtra(Constants.CLICKED_POST_PARCELABLE, clickedPost)
+                                        putExtra(Constants.CLICKED_POST_NAME, clickedPost.name)
                                     }
                                 )
                             },
@@ -190,6 +192,20 @@ fun HomeScreen(
                                 )
                             }
                         }
+                    }
+                } else {
+                    when (postsState) {
+                        is PostsState.Error -> {
+                            val errorState = postsState as PostsState.Error
+                            item {
+                                ErrorMessage(
+                                    error = errorState.message,
+                                    onRetry = { viewModel.refreshPosts() },
+                                    onDismiss = { viewModel.clearError() }
+                                )
+                            }
+                        }
+                        else -> Unit
                     }
                 }
             }

@@ -43,8 +43,13 @@ fun PostCard(
     onAuthorClick: (Post) -> Unit = {},
     onVideoClick: () -> Unit = {}
 ) {
-    var currentScore by remember { mutableIntStateOf(post.score) }
-    var voteState by remember { mutableStateOf(post.likes) } // null = no vote, true = upvoted, false = downvoted
+    var currentScore by remember(post.score) {
+        mutableIntStateOf(post.score)
+    }
+
+    var voteState by remember(post.likes) {
+        mutableStateOf(post.likes)  // null = no vote, true = upvoted, false = downvoted
+    }
 
     val postType = PostUtils.getPostType(post)
     val context = LocalContext.current

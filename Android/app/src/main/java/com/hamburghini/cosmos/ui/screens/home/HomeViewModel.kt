@@ -2,14 +2,21 @@ package com.hamburghini.cosmos.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.model.AuthState
 import com.hamburghini.cosmos.data.model.Post
+import com.hamburghini.cosmos.data.repository.ActionResult
+import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.RedditRepository
+import com.hamburghini.cosmos.data.repository.SortType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,8 +29,10 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _posts = MutableStateFlow<List<Post>>(emptyList())
-    val posts: StateFlow<List<Post>> = _posts.asStateFlow()
+    private val _events = MutableSharedFlow<UiEvent>()
+    val events = _events.asSharedFlow()
+
+    val postsState = repository.postsState
 
     private var currentAfter: String? = null
     private var lastAuthStateWasLoggedIn: Boolean? = null
@@ -34,6 +43,15 @@ class HomeViewModel @Inject constructor(
             profileManager.authState.collect { authState ->
                 handleAuthStateChange(authState)
             }
+            repository.postsState.collect { state ->
+                if (state is PostsState.Success) {
+                    _uiState.update {
+                        it.copy(
+                            hasMore = state.currentAfter != null
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -42,6 +60,7 @@ class HomeViewModel @Inject constructor(
      * Load posts immediately on first state emission
      */
     private fun handleAuthStateChange(authState: AuthState) {
+        Logger.d("handleAuthStateChange: $authState")
         when (authState) {
             is AuthState.LoggedIn -> {
                 val wasLoggedIn = lastAuthStateWasLoggedIn
@@ -64,9 +83,9 @@ class HomeViewModel @Inject constructor(
             is AuthState.LoggingIn -> {
                 // Don't reload while logging in - wait for final state
                 // If this is first state and we have no posts, show loading
-                if (lastAuthStateWasLoggedIn == null && _posts.value.isEmpty()) {
-                    _uiState.value = _uiState.value.copy(isLoading = true)
-                }
+//                if (lastAuthStateWasLoggedIn == null && _posts.value.isEmpty()) {
+//                    _uiState.value = _uiState.value.copy(isLoading = true)
+//                }
             }
             is AuthState.AuthError -> {
                 val wasLoggedIn = lastAuthStateWasLoggedIn
@@ -80,21 +99,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun loadPosts(sortType: SortType = SortType.HOT, forceRefresh: Boolean = false) {
+    fun loadPosts(
+        sortType: SortType = SortType.HOT,
+        forceRefresh: Boolean = false
+    ) {
         // Don't reload if we're already loading the same sort type, unless forced
-        if (!forceRefresh &&
-            _uiState.value.isLoading &&
-            _uiState.value.currentSortType == sortType) {
-            return
-        }
+        if (!forceRefresh && _uiState.value.currentSortType == sortType) return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            currentAfter = null
 
             try {
                 val isLoggedIn = profileManager.isLoggedIn()
-                val response = if (isLoggedIn) {
+                if (isLoggedIn) {
                     // Load user's personalized feed
                     when (sortType) {
                         SortType.HOT -> repository.getMyHotPosts()
@@ -113,67 +129,22 @@ class HomeViewModel @Inject constructor(
                         SortType.RISING -> repository.getRisingPosts("all")
                     }
                 }
-
-                if (response.isSuccessful) {
-                    val listing = response.body()
-                    if (listing != null) {
-                        val newPosts = listing.data.children.map { it.data }
-                        _posts.value = newPosts
-                        currentAfter = listing.data.after
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            currentSortType = sortType,
-                            hasMore = listing.data.after != null,
-                            isPersonalized = isLoggedIn && sortType != SortType.RISING
-                        )
-                    } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "No data received"
-                        )
-                    }
-                } else {
-                    val errorMessage = when (response.code()) {
-                        401 -> {
-                            // Token might be expired, try to refresh
-                            if (isLoggedIn && profileManager.getCurrentAccount()?.refreshToken?.isNotBlank() == true) {
-                                // Try to refresh token and reload
-                                val refreshResult = profileManager.refreshCurrentToken()
-                                if (refreshResult) {
-                                    // Token refreshed, retry loading posts
-                                    loadPosts(sortType, forceRefresh = true)
-                                    return@launch
-                                }
-                            }
-                            "Session expired - please log in again"
-                        }
-                        403 -> "Access denied - check permissions"
-                        429 -> "Too many requests - please wait"
-                        500, 502, 503 -> "Reddit server error - try again later"
-                        else -> "Failed to load posts (${response.code()})"
-                    }
-
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = errorMessage
-                    )
-                }
             } catch (e: IllegalStateException) {
                 // User not logged in for authenticated endpoint
                 if (e.message?.contains("not logged in") == true) {
                     // Fallback to public feed
                     loadPublicPosts(sortType)
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Error: ${e.message}"
-                    )
+//                    _uiState.value = _uiState.value.copy(
+//                        isLoading = false,
+//                        error = "Error: ${e.message}"
+//                    )
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Error loading posts: ${e.message}"
-                )
+//                _uiState.value = _uiState.value.copy(
+//                    isLoading = false,
+//                    error = "Error loading posts: ${e.message}"
+//                )
             }
         }
     }
@@ -181,37 +152,17 @@ class HomeViewModel @Inject constructor(
     private fun loadPublicPosts(sortType: SortType) {
         viewModelScope.launch {
             try {
-                val response = when (sortType) {
+                when (sortType) {
                     SortType.HOT, SortType.BEST -> repository.getHotPosts("all")
                     SortType.NEW -> repository.getNewPosts("all")
                     SortType.TOP -> repository.getTopPosts("all", "day")
                     SortType.RISING -> repository.getRisingPosts("all")
                 }
-
-                if (response.isSuccessful) {
-                    val listing = response.body()
-                    if (listing != null) {
-                        val newPosts = listing.data.children.map { it.data }
-                        _posts.value = newPosts
-                        currentAfter = listing.data.after
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            currentSortType = sortType,
-                            hasMore = listing.data.after != null,
-                            isPersonalized = false
-                        )
-                    }
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Failed to load posts: ${response.code()}"
-                    )
-                }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Error loading posts: ${e.message}"
-                )
+//                _uiState.value = _uiState.value.copy(
+//                    isLoading = false,
+//                    error = "Error loading posts: ${e.message}"
+//                )
             }
         }
     }
@@ -224,7 +175,7 @@ class HomeViewModel @Inject constructor(
 
             try {
                 val isLoggedIn = profileManager.isLoggedIn()
-                val response = if (isLoggedIn && _uiState.value.isPersonalized) {
+                if (isLoggedIn && _uiState.value.isPersonalized) {
                     // Load more from user's personalized feed
                     when (_uiState.value.currentSortType) {
                         SortType.HOT -> repository.getMyHotPosts(currentAfter)
@@ -242,29 +193,11 @@ class HomeViewModel @Inject constructor(
                         SortType.RISING -> repository.getRisingPosts("all", currentAfter)
                     }
                 }
-
-                if (response.isSuccessful) {
-                    val listing = response.body()
-                    if (listing != null) {
-                        val newPosts = listing.data.children.map { it.data }
-                        _posts.value += newPosts
-                        currentAfter = listing.data.after
-                        _uiState.value = _uiState.value.copy(
-                            isLoadingMore = false,
-                            hasMore = listing.data.after != null
-                        )
-                    }
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingMore = false,
-                        error = "Failed to load more posts: ${response.code()}"
-                    )
-                }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoadingMore = false,
-                    error = "Error loading more posts: ${e.message}"
-                )
+//                _uiState.value = _uiState.value.copy(
+//                    isLoadingMore = false,
+//                    error = "Error loading more posts: ${e.message}"
+//                )
             }
         }
     }
@@ -275,35 +208,44 @@ class HomeViewModel @Inject constructor(
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+//        _uiState.value = _uiState.value.copy(error = null)
     }
 
     fun voteOnPost(postId: String, direction: Int) {
         if (!profileManager.isLoggedIn()) {
-            _uiState.value = _uiState.value.copy(error = "Please log in to vote")
+            viewModelScope.launch {
+                _events.emit(
+                    UiEvent.ShowMessage("Please log in to vote")
+                )
+            }
             return
         }
 
         viewModelScope.launch {
             try {
-                val response = repository.vote(postId, direction)
-                if (!response.isSuccessful) {
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to vote: ${response.code()}"
-                    )
+                when (val response = repository.vote(postId, direction)) {
+                    is ActionResult.Failure -> {
+                        _events.emit(
+                            UiEvent.ShowMessage(response.reason)
+                        )
+                    }
+                    ActionResult.Success -> Unit
                 }
-                // If successful, the post score will be updated in the UI layer
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = "Error voting: ${e.message}"
-                )
+//                _uiState.value = _uiState.value.copy(
+//                    error = "Error voting: ${e.message}"
+//                )
             }
         }
     }
 
     fun savePost(postId: String, save: Boolean) {
         if (!profileManager.isLoggedIn()) {
-            _uiState.value = _uiState.value.copy(error = "Please log in to save posts")
+            viewModelScope.launch {
+                _events.emit(
+                    UiEvent.ShowMessage("Please log in to save posts")
+                )
+            }
             return
         }
 
@@ -315,33 +257,19 @@ class HomeViewModel @Inject constructor(
                     repository.unsavePost(postId)
                 }
 
-                if (response.isSuccessful) {
-                    // Update the local post state immediately
-                    updatePostSavedState(postId, save)
-                } else {
-                    val action = if (save) "save" else "unsave"
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to $action post: ${response.code()}"
-                    )
+                when (response) {
+                    is ActionResult.Failure -> {
+                        _events.emit(
+                            UiEvent.ShowMessage(response.reason)
+                        )
+                    }
+                    ActionResult.Success -> Unit
                 }
             } catch (e: Exception) {
                 val action = if (save) "save" else "unsave"
-                _uiState.value = _uiState.value.copy(
-                    error = "Error ${action}ing post: ${e.message}"
-                )
-            }
-        }
-    }
-
-    /**
-     * Update the saved state of a specific post in the local list
-     */
-    private fun updatePostSavedState(postId: String, saved: Boolean) {
-        _posts.value = _posts.value.map { post ->
-            if (post.name == postId) {
-                post.copy(saved = saved)
-            } else {
-                post
+//                _uiState.value = _uiState.value.copy(
+//                    error = "Error ${action}ing post: ${e.message}"
+//                )
             }
         }
     }
@@ -350,7 +278,11 @@ class HomeViewModel @Inject constructor(
      * Get a specific post by ID from the current list
      */
     fun getPost(postId: String): Post? {
-        return _posts.value.find { it.name == postId }
+        if (postsState.value is PostsState.Success) {
+            val map = (postsState.value as PostsState.Success).posts
+            return map[postId]
+        }
+        return null
     }
 
     fun getCurrentUsername(): String {
@@ -370,14 +302,12 @@ class HomeViewModel @Inject constructor(
 }
 
 data class HomeUiState(
-    val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val error: String? = null,
     val currentSortType: SortType = SortType.HOT,
     val hasMore: Boolean = false,
-    val isPersonalized: Boolean = false // Whether showing user's personalized feed
+    val isPersonalized: Boolean = false
 )
 
-enum class SortType {
-    HOT, BEST, NEW, TOP, RISING
+sealed interface UiEvent {
+    data class ShowMessage(val message: String) : UiEvent
 }
