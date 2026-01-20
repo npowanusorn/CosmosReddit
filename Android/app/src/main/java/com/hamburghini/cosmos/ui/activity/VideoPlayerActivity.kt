@@ -36,7 +36,8 @@ class VideoPlayerActivity : ComponentActivity() {
                         color = Color.Black
                     ) {
                         VideoPlayerScreen(
-                            contentUrl = videoUrl
+                            contentUrl = videoUrl,
+                            onBackClick = { finish() }
                         )
                     }
                 }
