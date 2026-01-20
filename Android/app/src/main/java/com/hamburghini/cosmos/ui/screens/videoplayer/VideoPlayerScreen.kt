@@ -63,8 +63,6 @@ fun VideoPlayerScreen(
     onBackClick: () -> Unit,
     viewModel: VideoPlayerViewModel = hiltViewModel()
 ) {
-    Logger.i("VideoPlayerScreen composing with contentUrl: $contentUrl")
-
     val context = LocalContext.current
     val isPlaying by viewModel.isPlaying.collectAsState()
     val hasEnded by viewModel.hasEnded.collectAsState()
@@ -84,9 +82,7 @@ fun VideoPlayerScreen(
         }
     }
 
-    // Initialize player when URL is available
     LaunchedEffect(contentUrl) {
-        Logger.i("LaunchedEffect: Initializing player with URL: $contentUrl")
         viewModel.initializePlayer(contentUrl)
     }
 
@@ -105,20 +101,14 @@ fun VideoPlayerScreen(
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = {
-                    Logger.i("AndroidView factory: Creating PlayerView")
                     PlayerView(context).apply {
                         val controller = viewModel.getPlayerController()
                         if (controller != null) {
                             this.controller = controller
-                            Logger.i("PlayerView created with controller")
-                        } else {
-                            Logger.e("PlayerController is null in AndroidView factory!")
                         }
                     }
                 },
-                onRelease = {
-                    Logger.i("AndroidView: onRelease called")
-                }
+                onRelease = {}
             )
         }
 

@@ -43,17 +43,13 @@ class VideoPlayerViewModel @Inject constructor(
     private var isSeeking = false
 
     fun initializePlayer(contentUrl: String) {
-        Logger.i("initializePlayer called with URL: $contentUrl")
-
         if (playerController != null) {
             Logger.w("Player already initialized, skipping")
             return
         }
 
         try {
-            Logger.i("Creating PlayerController...")
             playerController = PlayerController(context).apply {
-                Logger.i("Opening player with URL...")
                 open(
                     PlayerConfig.Builder(contentUrl)
                         .setPlayWhenReady(true)
@@ -68,7 +64,7 @@ class VideoPlayerViewModel @Inject constructor(
                                 Logger.i("Player READY - duration: $duration")
                                 _isLoading.value = false
                                 _totalTime.value = duration
-                                _isPlaying.value = isPlaying()
+                                _isPlaying.value = isPlaying
                                 _isPlayerReady.value = true
                                 _hasEnded.value = false
                             }
@@ -94,9 +90,7 @@ class VideoPlayerViewModel @Inject constructor(
                     }
                 }
             }
-            Logger.i("Player controller created successfully!")
         } catch (e: Exception) {
-            Logger.e("Error initializing player: ${e.message}", e)
             _isLoading.value = false
         }
     }
@@ -124,7 +118,6 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun replay() {
-        Logger.i("replay() called - restarting video from beginning")
         viewModelScope.launch {
             playerController?.seekTo(0)
             _hasEnded.value = false
@@ -134,17 +127,14 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun seekForward() {
-        Logger.i("seekForward() called")
         playerController?.skipForward(10_000L)
     }
 
     fun seekBackward() {
-        Logger.i("seekBackward() called")
         playerController?.skipBackward(10_000L)
     }
 
     fun startSeeking() {
-        Logger.i("startSeeking() called")
         isSeeking = true
         wasPlayingBeforeSeek = _isPlaying.value
         if (wasPlayingBeforeSeek) {
@@ -158,7 +148,6 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun finishSeeking(position: Long) {
-        Logger.i("finishSeeking() called with position: $position")
         viewModelScope.launch {
             playerController?.seekTo(position)
             isSeeking = false
@@ -174,7 +163,6 @@ class VideoPlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        Logger.i("ViewModel cleared, releasing player")
         playerController?.release()
         playerController = null
     }
