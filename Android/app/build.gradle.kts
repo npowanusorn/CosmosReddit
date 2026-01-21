@@ -52,8 +52,6 @@ android {
     }
 }
 
-val PLAYERPLUS_VER = "0.0.31"
-
 dependencies {
 
     /* -------------------- Core Android -------------------- */
@@ -77,7 +75,9 @@ dependencies {
     implementation(libs.zoomable)
 
     /* -------------------- Video Player -------------------- */
-    implementation("com.hamburghini.playerplus:playerplus:${PLAYERPLUS_VER}")
+    implementation("androidx.media3:media3-exoplayer:1.9.0")
+    implementation("androidx.media3:media3-exoplayer-dash:1.9.0")
+    implementation("androidx.media3:media3-ui-compose:1.9.0")
 
     /* -------------------- Networking -------------------- */
     implementation(libs.retrofit)

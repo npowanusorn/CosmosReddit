@@ -167,11 +167,19 @@ fun HomeScreen(
                             },
                             onVideoClick = {
                                 val videoUrl = post.preview?.videoPreview?.dashUrl
-                                Logger.i("videoUrl: $videoUrl")
+                                val width = post.preview?.videoPreview?.width?.toFloat()
+                                val height = post.preview?.videoPreview?.height?.toFloat()
+                                val aspectRatio = if (width != null && height != null && height != 0F) {
+                                    width / height
+                                } else {
+                                    null
+                                }
+                                Logger.i("videoUrl: $videoUrl, aspectRatio: $aspectRatio")
                                 if (!videoUrl.isNullOrEmpty()) {
                                     context.startActivity(
                                         Intent(context, VideoPlayerActivity::class.java).apply {
                                             putExtra(Constants.VIDEO_CLICKED_PARCELABLE, videoUrl)
+                                            putExtra(Constants.CLICKED_VIDEO_ASPECT_RATIO, aspectRatio)
                                         }
                                     )
                                 }

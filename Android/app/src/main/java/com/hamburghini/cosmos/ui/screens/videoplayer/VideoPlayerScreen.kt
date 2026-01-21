@@ -3,17 +3,20 @@ package com.hamburghini.cosmos.ui.screens.videoplayer
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,12 +27,9 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -38,154 +38,104 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.hamburghini.cosmos.core.util.Logger
-import com.hamburghini.playerplus.player.PlayerView
-import kotlinx.coroutines.delay
+import androidx.media3.ui.compose.PlayerSurface
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun VideoPlayerScreen(
     contentUrl: String,
+    aspectRatio: Float,
     onBackClick: () -> Unit,
     viewModel: VideoPlayerViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val isPlaying by viewModel.isPlaying.collectAsState()
-    val hasEnded by viewModel.hasEnded.collectAsState()
-    val currentTime by viewModel.currentTime.collectAsState()
-    val totalTime by viewModel.totalTime.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isPlayerReady by viewModel.isPlayerReady.collectAsState()
-
-    var isSeeking by remember { mutableStateOf(false) }
-    var showControls by remember { mutableStateOf(true) }
-
-    // Auto-hide controls after 3 seconds when playing
-    LaunchedEffect(isPlaying, showControls) {
-        if (isPlaying && showControls && !hasEnded) {
-            delay(3000)
-            showControls = false
-        }
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(contentUrl) {
-        viewModel.initializePlayer(contentUrl)
+        viewModel.prepare(contentUrl)
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                showControls = !showControls
-            }
-    ) {
-        // Only show player when it's ready
-        if (isPlayerReady) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = {
-                    PlayerView(context).apply {
-                        val controller = viewModel.getPlayerController()
-                        if (controller != null) {
-                            this.controller = controller
-                        }
-                    }
-                },
-                onRelease = {}
-            )
-        }
-
-        // Loading Indicator
-        if (isLoading || !isPlayerReady) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                LoadingIndicator()
-            }
-        }
-
-        // Media Controls with fade animation
-        AnimatedVisibility(
-            visible = showControls && isPlayerReady,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
-                .align(Alignment.BottomCenter)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.TopStart
-            ) {
-                IconButton(
-                    onClick = onBackClick
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
+            .background(Color.Black)
+            .pointerInput(Unit) {
+                detectTapGestures {
+                    viewModel.toggleControls()
                 }
             }
+    ) {
+        /* ───────── Video ───────── */
 
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.BottomCenter
+        PlayerSurface(
+            player = viewModel.player(),
+            modifier = Modifier
+                .fillMaxSize()
+                .aspectRatio(aspectRatio)
+        )
+
+        /* ───────── Back Button ───────── */
+
+        AnimatedVisibility(
+            visible = uiState.controlsVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopStart)
+        ) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .background(
+                        Color.Black.copy(alpha = 0.4f),
+                        CircleShape
+                    )
             ) {
-                MediaControlCard(
-                    isPlaying = isPlaying,
-                    hasEnded = hasEnded,
-                    currentTime = currentTime,
-                    totalTime = totalTime,
-                    onPlayPause = {
-                        viewModel.togglePlayPause()
-                        showControls = true
-                    },
-                    onReplay = {
-                        viewModel.replay()
-                        showControls = true
-                    },
-                    onSeekBack = {
-                        viewModel.seekBackward()
-                        showControls = true
-                    },
-                    onSeekForward = {
-                        viewModel.seekForward()
-                        showControls = true
-                    },
-                    onValueChanged = { value ->
-                        if (!isSeeking) {
-                            viewModel.startSeeking()
-                            isSeeking = true
-                        }
-                        viewModel.updateSeekPosition(value.toLong())
-                        showControls = true
-                    },
-                    onValueChangeFinished = {
-                        viewModel.finishSeeking(currentTime)
-                        isSeeking = false
-                    }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
                 )
             }
+        }
+
+        /* ───────── Controls ───────── */
+
+        AnimatedVisibility(
+            visible = uiState.controlsVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            MediaControlCard(
+                isPlaying = uiState.isPlaying,
+                hasEnded = uiState.hasEnded,
+                currentTime = uiState.currentTime,
+                totalTime = uiState.totalTime,
+                isScrubbing = uiState.isScrubbing,
+                scrubPosition = uiState.scrubPosition,
+                onScrubStart = viewModel::onScrubStart,
+                onScrubMove = viewModel::onScrubMove,
+                onScrubEnd = viewModel::onScrubEnd,
+                onPlayPause = viewModel::togglePlayPause,
+                onReplay = viewModel::replay,
+                onSeekBack = viewModel::seekBack,
+                onSeekForward = viewModel::seekForward,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            )
         }
     }
 }
@@ -197,12 +147,15 @@ fun MediaControlCard(
     hasEnded: Boolean,
     currentTime: Long,
     totalTime: Long,
+    isScrubbing: Boolean,
+    scrubPosition: Long,
     onPlayPause: () -> Unit,
     onReplay: () -> Unit,
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
-    onValueChanged: (Float) -> Unit,
-    onValueChangeFinished: () -> Unit,
+    onScrubStart: () -> Unit,
+    onScrubMove: (Float) -> Unit,
+    onScrubEnd: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -275,11 +228,19 @@ fun MediaControlCard(
                 )
 
                 Slider(
-                    value = currentTime.toFloat(),
-                    onValueChange = onValueChanged,
-                    onValueChangeFinished = onValueChangeFinished,
-                    valueRange = if (totalTime > 0) 0f..totalTime.toFloat() else 0f..1f,
-                    steps = 0,
+                    value = if (isScrubbing) scrubPosition.toFloat() else currentTime.toFloat(),
+                    onValueChange = { value ->
+                        if (!isScrubbing) onScrubStart()
+                        onScrubMove(value)
+                    },
+                    onValueChangeFinished = {
+                        onScrubEnd()
+                    },
+                    valueRange = if (totalTime > 0) {
+                        0f..totalTime.toFloat()
+                    } else {
+                        0f..1f
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 8.dp),
@@ -314,9 +275,9 @@ private fun formatMilliseconds(ms: Long): String {
     val seconds = TimeUnit.MILLISECONDS.toSeconds(ms) % 60
 
     return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%d:%02d", minutes, seconds)
+        String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
     }
 }
 
@@ -332,8 +293,11 @@ fun PreviewMediaControlCard() {
         onSeekBack = {},
         currentTime = 5000,
         totalTime = 10000,
-        onValueChanged = {},
-        onValueChangeFinished = {}
+        isScrubbing = false,
+        scrubPosition = 0,
+        onScrubStart = {},
+        onScrubMove = {},
+        onScrubEnd = {}
     )
 }
 
@@ -349,7 +313,10 @@ fun PreviewMediaControlCardEnded() {
         onSeekBack = {},
         currentTime = 10000,
         totalTime = 10000,
-        onValueChanged = {},
-        onValueChangeFinished = {}
+        isScrubbing = false,
+        scrubPosition = 0,
+        onScrubStart = {},
+        onScrubMove = {},
+        onScrubEnd = {}
     )
 }

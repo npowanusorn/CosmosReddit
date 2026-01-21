@@ -23,6 +23,7 @@ class VideoPlayerActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val videoUrl = intent.getStringExtra(Constants.VIDEO_CLICKED_PARCELABLE)
+        val aspectRatio = intent.getFloatExtra(Constants.CLICKED_VIDEO_ASPECT_RATIO, 0F)
         if (videoUrl == null) {
             Toast.makeText(this, "Error opening this video", Toast.LENGTH_SHORT).show()
             return finish()
@@ -37,6 +38,7 @@ class VideoPlayerActivity : ComponentActivity() {
                     ) {
                         VideoPlayerScreen(
                             contentUrl = videoUrl,
+                            aspectRatio = aspectRatio,
                             onBackClick = { finish() }
                         )
                     }
