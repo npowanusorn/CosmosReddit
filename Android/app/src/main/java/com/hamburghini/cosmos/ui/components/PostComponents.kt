@@ -2,6 +2,7 @@ package com.hamburghini.cosmos.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +46,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.core.util.PhotoViewerUtils
@@ -285,6 +287,10 @@ fun PostFooter(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
                 containerColor = animatedBackground
+            ),
+            border = BorderStroke(
+                width = if (voteState == null) 1.dp else 0.dp,
+                color = MaterialTheme.colorScheme.surfaceVariant
             )
         ) {
             Row(
@@ -376,4 +382,14 @@ fun PostFooter(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun PreviewPostFooter() {
+    PostFooter(
+        post = Post.mock,
+        currentScore = 100,
+        voteState = null,
+    )
 }
