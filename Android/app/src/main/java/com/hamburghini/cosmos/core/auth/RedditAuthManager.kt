@@ -15,11 +15,14 @@ import com.hamburghini.cosmos.data.model.RedditAccount
 import com.hamburghini.cosmos.data.model.UserInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.net.toUri
+import java.net.ConnectException
+import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
@@ -33,6 +36,11 @@ class RedditAuthManager @Inject constructor(
         private const val CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
         private const val PREFS_NAME = "reddit_auth_prefs"
         private const val KEY_AUTH_STATE = "current_auth_state"
+
+        // Retry configuration
+        private const val MAX_RETRY_ATTEMPTS = 3
+        private const val INITIAL_RETRY_DELAY_MS = 1000L
+        private const val MAX_RETRY_DELAY_MS = 10000L
     }
 
     private val authPrefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -151,10 +159,10 @@ class RedditAuthManager @Inject constructor(
     }
 
     /**
-     * Exchange authorization code for access token
+     * Exchange authorization code for access token with retry logic
      */
     private suspend fun exchangeCodeForToken(code: String): AuthResult {
-        return try {
+        return executeWithRetry {
             val basicAuth = "Basic " + Base64.encodeToString(
                 "${Constants.REDDIT_CLIENT_ID}:".toByteArray(),
                 Base64.NO_WRAP
@@ -214,14 +222,6 @@ class RedditAuthManager @Inject constructor(
 
                 AuthResult.Error(userFriendlyMessage)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during token exchange", e)
-            val userFriendlyMessage = when (e) {
-                is UnknownHostException -> "No internet connection - please check your network"
-                is SocketTimeoutException -> "Connection timeout - please try again"
-                else -> "Network error during authentication: ${e.message}"
-            }
-            AuthResult.Error(userFriendlyMessage)
         }
     }
 
@@ -268,11 +268,11 @@ class RedditAuthManager @Inject constructor(
     }
 
     /**
-     * Refresh access token using refresh token
+     * Refresh access token using refresh token with retry logic
      */
     suspend fun refreshAccessToken(refreshToken: String): AuthResult {
         return withContext(Dispatchers.IO) {
-            try {
+            executeWithRetry {
                 val basicAuth = "Basic " + Base64.encodeToString(
                     "${Constants.REDDIT_CLIENT_ID}:".toByteArray(),
                     Base64.NO_WRAP
@@ -323,11 +323,49 @@ class RedditAuthManager @Inject constructor(
 
                     AuthResult.Error(userFriendlyMessage)
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception during token refresh", e)
-                AuthResult.Error("Failed to refresh token - please log in again")
             }
         }
+    }
+
+    /**
+     * Execute a network operation with retry logic for transient failures
+     */
+    private suspend fun <T> executeWithRetry(
+        block: suspend () -> T
+    ): T {
+        var lastException: Exception? = null
+        var currentDelay = INITIAL_RETRY_DELAY_MS
+
+        for (attempt in 1..MAX_RETRY_ATTEMPTS) {
+            try {
+                return block()
+            } catch (e: Exception) {
+                lastException = e
+
+                // Check if this is a retryable network error
+                val isRetryable = when (e) {
+                    is ConnectException,
+                    is SocketException,
+                    is SocketTimeoutException,
+                    is UnknownHostException -> true
+                    else -> false
+                }
+
+                if (!isRetryable || attempt >= MAX_RETRY_ATTEMPTS) {
+                    // Non-retryable error or max attempts reached
+                    throw e
+                }
+
+                Log.w(TAG, "Network error on attempt $attempt/$MAX_RETRY_ATTEMPTS: ${e.message}")
+                Log.d(TAG, "Retrying in ${currentDelay}ms...")
+
+                delay(currentDelay)
+                currentDelay = (currentDelay * 2).coerceAtMost(MAX_RETRY_DELAY_MS)
+            }
+        }
+
+        // This shouldn't be reached, but throw the last exception if it is
+        throw lastException ?: Exception("Unknown error during retry")
     }
 
     /**
