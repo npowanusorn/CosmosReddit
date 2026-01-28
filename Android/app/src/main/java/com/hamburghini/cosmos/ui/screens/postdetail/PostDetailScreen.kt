@@ -251,7 +251,12 @@ private fun PostDetailCard(
                 onGalleryClick = {
                     val imageUrls = PhotoViewerUtils.extractImageUrls(post)
                     if (imageUrls.isNotEmpty()) {
-                        PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                        PhotoViewerUtils.launchPhotoViewer(
+                            context = context,
+                            redditImage = imageUrls,
+                            postName = post.name,
+                            initialPage = 0
+                        )
                     }
                 }
             )
@@ -260,10 +265,15 @@ private fun PostDetailCard(
             PostType.LINK -> PostLinkContent(post)
             PostType.GALLERY -> PostGalleryContent(
                 post = post,
-                onGalleryClick = {
+                onGalleryClick = { index ->
                     val imageUrls = PhotoViewerUtils.extractImageUrls(post)
                     if (imageUrls.isNotEmpty()) {
-                        PhotoViewerUtils.launchPhotoViewer(context, imageUrls, 0)
+                        PhotoViewerUtils.launchPhotoViewer(
+                            context = context,
+                            redditImage = imageUrls,
+                            postName = post.name,
+                            initialPage = index
+                        )
                     }
                 }
             )

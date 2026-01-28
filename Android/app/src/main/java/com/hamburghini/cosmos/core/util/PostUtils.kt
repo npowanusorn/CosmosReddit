@@ -1,5 +1,9 @@
 package com.hamburghini.cosmos.core.util
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.os.Parcelable
 import com.hamburghini.cosmos.data.model.Post
 import kotlinx.parcelize.Parcelize
@@ -124,6 +128,22 @@ object PostUtils {
 
     fun getFlairText(post: Post): String? {
         return post.link_flair_text?.takeIf { it.isNotBlank() }
+    }
+
+    fun sharePost(context: Context, post: Post) {
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, post.title)
+            putExtra(Intent.EXTRA_TEXT, "https://reddit.com${post.permalink}")
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "Share post via"))
+    }
+
+    fun copyPostLink(context: Context, post: Post) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Reddit post link", "https://reddit.com${post.permalink}")
+        clipboard.setPrimaryClip(clip)
     }
 }
 

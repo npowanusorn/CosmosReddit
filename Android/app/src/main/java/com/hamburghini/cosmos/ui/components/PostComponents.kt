@@ -263,19 +263,6 @@ fun PostFooter(
     onDownvote: () -> Unit = {},
     onMenuClick: ((Post) -> Unit)? = null
 ) {
-    val targetColor = when (voteState) {
-        true -> UpvoteColor.copy(alpha = 0.35f)
-        false -> DownvoteColor.copy(alpha = 0.35f)
-        null -> MaterialTheme.colorScheme.surface
-    }
-
-    val animatedBackground by animateColorAsState(
-        targetValue = targetColor,
-        animationSpec = tween(durationMillis = 500),
-        label = "VoteBackground"
-    )
-
-    val hapticFeedback = LocalHapticFeedback.current
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -283,67 +270,12 @@ fun PostFooter(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Voting controls
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = animatedBackground
-            ),
-            border = BorderStroke(
-                width = if (voteState == null) 1.dp else 0.dp,
-                color = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                IconButton(
-                    onClick = {
-                        onUpvote()
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOn)
-                    },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = "Upvote",
-                        tint = when (voteState) {
-                            true -> UpvoteColor
-                            else -> NeutralColor
-                        }
-                    )
-                }
-
-                Text(
-                    text = PostUtils.formatScore(currentScore),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = when (voteState) {
-                        true -> UpvoteColor
-                        false -> DownvoteColor
-                        null -> NeutralColor
-                    },
-                    fontWeight = FontWeight.Medium
-                )
-
-                IconButton(
-                    onClick = {
-                        onDownvote()
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOn)
-                    },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Downvote",
-                        tint = when (voteState) {
-                            false -> DownvoteColor
-                            else -> NeutralColor
-                        }
-                    )
-                }
-            }
-        }
+        PostVoteControls(
+            currentScore = currentScore,
+            voteState = voteState,
+            onUpvote = onUpvote,
+            onDownvote = onDownvote
+        )
 
         // Comments and share
         Row(
@@ -379,6 +311,90 @@ fun PostFooter(
                         modifier = Modifier.size(16.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PostVoteControls(
+    currentScore: Int,
+    voteState: Boolean?,
+    onUpvote: () -> Unit,
+    onDownvote: () -> Unit
+) {
+    val targetColor = when (voteState) {
+        true -> UpvoteColor.copy(alpha = 0.35f)
+        false -> DownvoteColor.copy(alpha = 0.35f)
+        null -> MaterialTheme.colorScheme.surface
+    }
+
+    val animatedBackground by animateColorAsState(
+        targetValue = targetColor,
+        animationSpec = tween(durationMillis = 500),
+        label = "VoteBackground"
+    )
+
+    val hapticFeedback = LocalHapticFeedback.current
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = animatedBackground
+        ),
+        border = BorderStroke(
+            width = if (voteState == null) 1.dp else 0.dp,
+            color = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    onUpvote()
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowUp,
+                    contentDescription = "Upvote",
+                    tint = when (voteState) {
+                        true -> UpvoteColor
+                        else -> NeutralColor
+                    }
+                )
+            }
+
+            Text(
+                text = PostUtils.formatScore(currentScore),
+                style = MaterialTheme.typography.labelMedium,
+                color = when (voteState) {
+                    true -> UpvoteColor
+                    false -> DownvoteColor
+                    null -> NeutralColor
+                },
+                fontWeight = FontWeight.Medium
+            )
+
+            IconButton(
+                onClick = {
+                    onDownvote()
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Downvote",
+                    tint = when (voteState) {
+                        false -> DownvoteColor
+                        else -> NeutralColor
+                    }
+                )
             }
         }
     }

@@ -13,19 +13,13 @@ import com.hamburghini.cosmos.ui.screens.photoviewer.PhotoViewerScreen
 import com.hamburghini.cosmos.ui.theme.CosmosTheme
 import dagger.hilt.android.AndroidEntryPoint
 
-/**
- * Activity for displaying full-screen photo viewer with zoom and swipe capabilities
- *
- * Expects the following extras:
- * - IMAGE_URLS: ArrayList<String> - List of image URLs to display
- * - INITIAL_PAGE: Int - Starting page index (default: 0)
- */
 @AndroidEntryPoint
 class PhotoViewerActivity : ComponentActivity() {
 
     companion object {
-        const val EXTRA_IMAGE_URLS = "extra_image_urls"
-        const val EXTRA_INITIAL_PAGE = "extra_initial_page"
+        const val EXTRA_IMAGE_URLS = "EXTRA_IMAGE_URLS"
+        const val EXTRA_INITIAL_PAGE = "EXTRA_INITIAL_PAGE"
+        const val EXTRA_POST_NAME = "EXTRA_POST_NAME"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,9 +29,10 @@ class PhotoViewerActivity : ComponentActivity() {
         // Get image URLs from intent
         val redditImages = intent.getParcelableArrayListExtra(EXTRA_IMAGE_URLS, RedditImage::class.java) ?: arrayListOf()
         val initialPage = intent.getIntExtra(EXTRA_INITIAL_PAGE, 0)
+        val postName = intent.getStringExtra(EXTRA_POST_NAME)
 
         // If no images provided, finish activity
-        if (redditImages.isEmpty()) {
+        if (redditImages.isEmpty() && postName.isNullOrBlank()) {
             finish()
             return
         }
@@ -51,6 +46,7 @@ class PhotoViewerActivity : ComponentActivity() {
                 ) {
                     PhotoViewerScreen(
                         redditImages = redditImages,
+                        postId = postName!!,
                         initialPage = initialPage,
                         onBackClick = { finish() }
                     )

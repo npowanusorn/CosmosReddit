@@ -63,6 +63,7 @@ import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.Logger
+import com.hamburghini.cosmos.core.util.PostUtils
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.SortType
 import kotlinx.coroutines.launch
@@ -301,12 +302,12 @@ fun HomeScreen(
             },
             onShareClick = {
                 currentPost.let { post ->
-                    sharePost(context, post)
+                    PostUtils.sharePost(context, post)
                 }
             },
             onCopyLinkClick = {
                 currentPost.let { post ->
-                    copyPostLink(context, post)
+                    PostUtils.copyPostLink(context, post)
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("Link copied to clipboard")
                     }
@@ -430,20 +431,4 @@ private fun ErrorMessage(
             }
         }
     }
-}
-
-private fun sharePost(context: Context, post: Post) {
-    val shareIntent = Intent().apply {
-        action = Intent.ACTION_SEND
-        type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, post.title)
-        putExtra(Intent.EXTRA_TEXT, "https://reddit.com${post.permalink}")
-    }
-    context.startActivity(Intent.createChooser(shareIntent, "Share post via"))
-}
-
-private fun copyPostLink(context: Context, post: Post) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("Reddit post link", "https://reddit.com${post.permalink}")
-    clipboard.setPrimaryClip(clip)
 }

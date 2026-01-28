@@ -131,7 +131,12 @@ fun PostCard(
                         // Launch photo viewer for single image
                         val redditImages = PhotoViewerUtils.extractImageUrls(post)
                         if (redditImages.isNotEmpty()) {
-                            PhotoViewerUtils.launchPhotoViewer(context, redditImages, 0)
+                            PhotoViewerUtils.launchPhotoViewer(
+                                context = context,
+                                redditImage = redditImages,
+                                postName = post.name,
+                                initialPage = 0
+                            )
                         }
                     }
                 )
@@ -147,7 +152,12 @@ fun PostCard(
                         // Launch photo viewer for gallery
                         val imageUrls = PhotoViewerUtils.extractImageUrls(post)
                         if (imageUrls.isNotEmpty()) {
-                            PhotoViewerUtils.launchPhotoViewer(context, imageUrls, index)
+                            PhotoViewerUtils.launchPhotoViewer(
+                                context = context,
+                                redditImage = imageUrls,
+                                postName = post.name,
+                                initialPage = index
+                            )
                         }
                     }
                 )

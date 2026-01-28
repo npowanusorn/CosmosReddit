@@ -17,6 +17,7 @@ object PhotoViewerUtils {
     fun launchPhotoViewer(
         context: Context,
         redditImage: List<RedditImage>,
+        postName: String,
         initialPage: Int = 0
     ) {
         if (redditImage.isEmpty()) return
@@ -27,6 +28,7 @@ object PhotoViewerUtils {
                 ArrayList(redditImage)
             )
             putExtra(PhotoViewerActivity.EXTRA_INITIAL_PAGE, initialPage)
+            putExtra(PhotoViewerActivity.EXTRA_POST_NAME, postName)
         }
         context.startActivity(intent)
     }
