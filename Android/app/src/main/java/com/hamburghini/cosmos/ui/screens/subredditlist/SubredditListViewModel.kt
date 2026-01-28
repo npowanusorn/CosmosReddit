@@ -376,3 +376,59 @@ data class SubredditListUiState(
     val hasMorePopular: Boolean = false,
     val loadingProgress: String? = null
 )
+
+/**
+ * Represents an index section for the A-Z navigation
+ */
+data class IndexSection(
+    val label: String,
+    val firstItemIndex: Int
+)
+
+/**
+ * Extension function to group subreddits by their first letter
+ * Returns a map of letter -> list of subreddits starting with that letter
+ */
+fun List<SubredditAboutData>.groupByFirstLetter(): Map<String, List<SubredditAboutData>> {
+    return this.groupBy { subreddit ->
+        val firstChar = subreddit.displayName.firstOrNull()?.uppercase() ?: "#"
+        when {
+            firstChar[0].isLetter() -> firstChar
+            else -> "#"
+        }
+    }
+}
+
+/**
+ * Extension function to build index sections for navigation
+ * Returns a list of IndexSection objects representing the navigation structure
+ */
+fun buildIndexSections(
+    hasFavorites: Boolean,
+    subreddits: List<SubredditAboutData>,
+    favoriteCount: Int
+): List<IndexSection> {
+    val sections = mutableListOf<IndexSection>()
+    var currentIndex = 0
+
+    // Add favorites section if present
+    if (hasFavorites) {
+        sections.add(IndexSection("★", currentIndex))
+        currentIndex += favoriteCount + 1 // +1 for section header
+    }
+
+    // Add subscribed section header
+    currentIndex++ // For "Subscribed" header
+
+    // Group subreddits by first letter
+    val grouped = subreddits.groupByFirstLetter()
+    val sortedLetters = grouped.keys.sorted()
+
+    // Add letter sections
+    sortedLetters.forEach { letter ->
+        sections.add(IndexSection(letter, currentIndex))
+        currentIndex += grouped[letter]?.size ?: 0
+    }
+
+    return sections
+}

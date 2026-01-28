@@ -87,7 +87,6 @@ fun PhotoViewerScreen(
                     post = post!!,
                     redditImages = redditImages,
                     pagerState = pagerState,
-                    initialPage = initialPage,
                     onBackClick = onBackClick,
                     onMenuClick = {
                         showPostMenu = true
@@ -117,23 +116,12 @@ fun PhotoViewerScreen(
                                 val newSaveState = !it.saved
                                 viewModel.savePost(it.name, newSaveState)
 
-//                            // Update selected post immediately for UI feedback
-//                            selectedPost = post.copy(saved = newSaveState)
-
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
                                         if (newSaveState) "Post saved" else "Post unsaved"
                                     )
                                 }
                             }
-//                                val newSaveState = !post.saved
-//                                viewModel.savePost(post.name, newSaveState)
-//
-//                                coroutineScope.launch {
-//                                    snackbarHostState.showSnackbar(
-//                                        if (newSaveState) "Post saved" else "Post unsaved"
-//                                    )
-//                                }
                         },
                         onHideClick = {
                             post?.let {
@@ -230,7 +218,6 @@ fun PhotoViewerContent(
     post: Post,
     redditImages: List<RedditImage>,
     pagerState: PagerState,
-    initialPage: Int,
     onBackClick: () -> Unit,
     onMenuClick: () -> Unit,
     onUpvoteClick: () -> Unit,

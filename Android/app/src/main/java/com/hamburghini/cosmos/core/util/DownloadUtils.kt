@@ -30,7 +30,7 @@ object DownloadUtils {
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@withContext null
 
-                    val body = response.body ?: return@withContext null
+                    val body = response.body
                     val bytes = body.bytes()
                     val mimeType = body.contentType()?.toString()
                         ?: "image/jpeg"
