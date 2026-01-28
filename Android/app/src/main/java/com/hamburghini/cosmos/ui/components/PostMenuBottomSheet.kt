@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
@@ -33,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hamburghini.cosmos.data.model.Post
 import kotlinx.coroutines.launch
@@ -50,7 +53,8 @@ fun PostMenuBottomSheet(
     onCopyLinkClick: () -> Unit,
     onBlockUserClick: () -> Unit,
     onViewProfileClick: () -> Unit,
-    onViewSubredditClick: () -> Unit
+    onViewSubredditClick: () -> Unit,
+    onDownloadImageClick: (() -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false
@@ -119,6 +123,13 @@ fun PostMenuBottomSheet(
                     onDismissRequest()
                 }
                 onViewSubredditClick()
+            },
+            onDownloadImageClick = {
+                scope.launch {
+                    sheetState.hide()
+                    onDismissRequest()
+                }
+                onDownloadImageClick?.invoke()
             }
         )
     }
@@ -136,7 +147,8 @@ private fun PostMenuContent(
     onCopyLinkClick: () -> Unit,
     onBlockUserClick: () -> Unit,
     onViewProfileClick: () -> Unit,
-    onViewSubredditClick: () -> Unit
+    onViewSubredditClick: () -> Unit,
+    onDownloadImageClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -163,6 +175,22 @@ private fun PostMenuContent(
         )
 
         // Main Actions (always visible)
+        if (onDownloadImageClick != null) {
+            MenuItemSection(title = "Gallery") {
+                MenuItem(
+                    icon = Icons.Default.Download,
+                    title = "Download Image",
+                    subtitle = "Download the current image",
+                    onClick = onDownloadImageClick
+                )
+            }
+
+            // Navigation
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+
         MenuItemSection(title = "Actions") {
             MenuItem(
                 icon = Icons.Default.Share,
@@ -310,4 +338,25 @@ private fun MenuItem(
             )
         }
     }
+}
+
+@Preview(
+    device = Devices.PHONE,
+    showBackground = true
+)
+@Composable
+fun PreviewPostMenuBottomSheet() {
+    PostMenuContent(
+        post = Post.mock,
+        isLoggedIn = true,
+        onSaveClick = { },
+        onHideClick = { },
+        onReportClick = { },
+        onShareClick = { },
+        onCopyLinkClick = { },
+        onBlockUserClick = { },
+        onViewProfileClick = { },
+        onViewSubredditClick = { },
+        onDownloadImageClick = { },
+    )
 }

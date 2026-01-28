@@ -10,14 +10,17 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,6 +36,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.hamburghini.cosmos.R
+import com.hamburghini.cosmos.core.util.DownloadUtils
 import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PostUtils
 import com.hamburghini.cosmos.core.util.RedditImage
@@ -41,6 +46,7 @@ import com.hamburghini.cosmos.ui.components.MediaScreenBottomBar
 import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.components.ZoomableImage
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
 /**
  * Photo viewer screen with swipeable gallery and zoomable images
@@ -59,8 +65,13 @@ fun PhotoViewerScreen(
 ) {
     val post by viewModel.postFlow(postId).collectAsState()
     val context = LocalContext.current
+    val appName = stringResource(R.string.app_name)
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val pagerState = rememberPagerState(
+        initialPage = initialPage.coerceIn(0, redditImages.size - 1),
+        pageCount = { redditImages.size }
+    )
 
     var showPostMenu by remember { mutableStateOf(false) }
 
@@ -75,6 +86,7 @@ fun PhotoViewerScreen(
                 PhotoViewerContent(
                     post = post!!,
                     redditImages = redditImages,
+                    pagerState = pagerState,
                     initialPage = initialPage,
                     onBackClick = onBackClick,
                     onMenuClick = {
@@ -172,6 +184,32 @@ fun PhotoViewerScreen(
                                     snackbarHostState.showSnackbar("Navigate to ${it.subreddit_name_prefixed}")
                                 }
                             }
+                        },
+                        onDownloadImageClick = {
+                            val index = pagerState.currentPage
+                            Logger.i("image url: ${redditImages[index].fullUrl}")
+                            coroutineScope.launch {
+                                val uri = DownloadUtils.downloadImageToDownloads(
+                                    context = context,
+                                    imageUrl = redditImages[index].fullUrl,
+                                    fileName = "reddit_${postId}_$index",
+                                    appFolderName = appName
+                                )
+
+                                if (uri != null) {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "Image saved",
+                                        actionLabel = "Open",
+                                        duration = SnackbarDuration.Long
+                                    )
+
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        DownloadUtils.openImage(context, uri)
+                                    }
+                                } else {
+                                    snackbarHostState.showSnackbar("Download failed")
+                                }
+                            }
                         }
                     )
                 }
@@ -191,6 +229,7 @@ fun PhotoViewerScreen(
 fun PhotoViewerContent(
     post: Post,
     redditImages: List<RedditImage>,
+    pagerState: PagerState,
     initialPage: Int,
     onBackClick: () -> Unit,
     onMenuClick: () -> Unit,
@@ -199,11 +238,6 @@ fun PhotoViewerContent(
     onShareClick: () -> Unit,
 ) {
     var showUI by remember { mutableStateOf(true) }
-
-    val pagerState = rememberPagerState(
-        initialPage = initialPage.coerceIn(0, redditImages.size - 1),
-        pageCount = { redditImages.size }
-    )
 
     Box(
         modifier = Modifier
