@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -56,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hamburghini.cosmos.core.constants.Constants
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.ui.activity.PostDetailActivity
@@ -86,6 +86,7 @@ fun HomeScreen(
     val isRefreshing by remember {
         derivedStateOf { postsState is PostsState.Refresh }
     }
+    val blurNsfw by viewModel.blurNsfw.collectAsStateWithLifecycle()
 
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var showPostMenu by remember { mutableStateOf(false) }
@@ -181,6 +182,7 @@ fun HomeScreen(
                     ) { post ->
                         PostCard(
                             post = post,
+                            blurNsfw = blurNsfw,
                             onPostClick = { clickedPost ->
                                 println("Post clicked: ${clickedPost.title}")
                                 context.startActivity(

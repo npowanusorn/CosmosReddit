@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hamburghini.cosmos.core.util.CommentUtils
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.core.util.Logger
@@ -59,6 +60,7 @@ fun PostDetailScreen(
 ) {
     val post by viewModel.post.collectAsState()
     val commentsState by viewModel.commentsState.collectAsState()
+    val blurNsfw by viewModel.blurNsfw.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.loadComments()
@@ -69,6 +71,7 @@ fun PostDetailScreen(
             PostDetailContent(
                 currentPost = currentPost,
                 commentsState = commentsState,
+                blurNsfw = blurNsfw,
                 onUpvote = { direction ->
                     viewModel.voteOnPost(direction)
                 },
@@ -85,6 +88,7 @@ fun PostDetailScreen(
 private fun PostDetailContent(
     currentPost: Post,
     commentsState: CommentsState,
+    blurNsfw: Boolean,
     onUpvote: (Int) -> Unit,
     onDownvote: (Int) -> Unit
 ) {
@@ -101,6 +105,7 @@ private fun PostDetailContent(
             item {
                 PostDetailCard(
                     post = currentPost,
+                    blurNsfw = blurNsfw,
                     onUpvote = onUpvote,
                     onDownvote = onDownvote,
                     context = context
@@ -201,6 +206,7 @@ private fun PostDetailContent(
 @Composable
 private fun PostDetailCard(
     post: Post,
+    blurNsfw: Boolean,
     onUpvote: (Int) -> Unit,
     onDownvote: (Int) -> Unit,
     context: Context
@@ -248,6 +254,7 @@ private fun PostDetailCard(
         when (postType) {
             PostType.IMAGE -> PostGalleryContent(
                 post = post,
+                blurNsfw = blurNsfw,
                 onGalleryClick = {
                     val imageUrls = PhotoViewerUtils.extractImageUrls(post)
                     if (imageUrls.isNotEmpty()) {
@@ -265,6 +272,7 @@ private fun PostDetailCard(
             PostType.LINK -> PostLinkContent(post)
             PostType.GALLERY -> PostGalleryContent(
                 post = post,
+                blurNsfw = blurNsfw,
                 onGalleryClick = { index ->
                     val imageUrls = PhotoViewerUtils.extractImageUrls(post)
                     if (imageUrls.isNotEmpty()) {
@@ -323,6 +331,7 @@ fun PreviewPostDetailScreen() {
     PostDetailContent(
         currentPost = Post.mock.copy(likes = false),
         commentsState = CommentsState.Loaded(listOf(), CommentSort.CONFIDENCE),
+        blurNsfw = true,
         onUpvote = {},
         onDownvote = {}
     )

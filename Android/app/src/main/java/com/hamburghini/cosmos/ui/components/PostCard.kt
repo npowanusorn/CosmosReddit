@@ -35,6 +35,7 @@ import com.hamburghini.cosmos.core.util.PostUtils
 @Composable
 fun PostCard(
     post: Post,
+    blurNsfw: Boolean,
     modifier: Modifier = Modifier,
     onPostClick: (Post) -> Unit = {},
     onVote: (String, Int) -> Unit = { _, _ -> },
@@ -127,6 +128,7 @@ fun PostCard(
             when (postType) {
                 PostType.IMAGE -> PostGalleryContent(
                     post = post,
+                    blurNsfw = blurNsfw,
                     onGalleryClick = {
                         // Launch photo viewer for single image
                         val redditImages = PhotoViewerUtils.extractImageUrls(post)
@@ -148,6 +150,7 @@ fun PostCard(
                 PostType.LINK -> PostLinkContent(post)
                 PostType.GALLERY -> PostGalleryContent(
                     post = post,
+                    blurNsfw = blurNsfw,
                     onGalleryClick = { index ->
                         // Launch photo viewer for gallery
                         val imageUrls = PhotoViewerUtils.extractImageUrls(post)
@@ -203,6 +206,7 @@ fun PostCard(
 @Composable
 fun PreviewPostCard() {
     PostCard(
-        post = Post.mock.copy(likes = true)
+        post = Post.mock.copy(likes = true),
+        blurNsfw = true
     )
 }

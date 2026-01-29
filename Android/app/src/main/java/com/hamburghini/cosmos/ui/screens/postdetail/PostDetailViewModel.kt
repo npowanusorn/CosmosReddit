@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hamburghini.cosmos.core.constants.Constants
+import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.repository.ActionResult
@@ -12,6 +13,7 @@ import com.hamburghini.cosmos.data.repository.CommentsRepository
 import com.hamburghini.cosmos.data.repository.CommentsState
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.RedditRepository
+import com.hamburghini.cosmos.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -30,10 +33,21 @@ class PostDetailViewModel @Inject constructor(
     private val commentsRepository: CommentsRepository,
     private val redditRepository: RedditRepository,
     private val savedStateHandle: SavedStateHandle,
-    private val profileManager: ProfileManager
+    private val profileManager: ProfileManager,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val postName = MutableStateFlow<String?>(null)
+
+    val blurNsfw = settingsRepository.blurNsfwFlow
+        .onEach { isEnabled ->
+            Logger.d("DataStore update: $isEnabled")
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val post: StateFlow<Post?> =

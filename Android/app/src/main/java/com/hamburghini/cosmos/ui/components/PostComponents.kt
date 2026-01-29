@@ -59,12 +59,17 @@ import com.hamburghini.cosmos.ui.theme.UpvoteColor
 @Composable
 fun PostGalleryContent(
     post: Post,
+    blurNsfw: Boolean,
     onGalleryClick: (Int) -> Unit
 ) {
     val redditImages = PhotoViewerUtils.extractImageUrls(post)
 
     var revealed by remember { mutableStateOf(false) }
-    val isBlurred = (post.over_18 || post.spoiler == true) && !revealed
+    val isBlurred = if (!blurNsfw) {
+        false
+    } else {
+        (post.over_18 || post.spoiler == true) && !revealed
+    }
 
     val shape = RoundedCornerShape(12.dp)
 

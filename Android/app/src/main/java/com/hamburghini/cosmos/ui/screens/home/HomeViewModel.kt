@@ -10,13 +10,17 @@ import com.hamburghini.cosmos.data.repository.ActionResult
 import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.RedditRepository
+import com.hamburghini.cosmos.data.repository.SettingsRepository
 import com.hamburghini.cosmos.data.repository.SortType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,7 +28,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: RedditRepository,
-    private val profileManager: ProfileManager
+    private val profileManager: ProfileManager,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -34,6 +39,15 @@ class HomeViewModel @Inject constructor(
     val events = _events.asSharedFlow()
 
     val postsState = repository.postsState
+    val blurNsfw = settingsRepository.blurNsfwFlow
+        .onEach { isEnabled ->
+            Logger.d("DataStore update: $isEnabled")
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 
     private var currentAfter: String? = null
     private var lastAuthStateWasLoggedIn: Boolean? = null
