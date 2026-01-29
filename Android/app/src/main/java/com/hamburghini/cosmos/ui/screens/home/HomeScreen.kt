@@ -98,20 +98,33 @@ fun HomeScreen(
     // Load more posts when reaching the end
     LaunchedEffect(listState) {
         snapshotFlow {
-            // Monitor these two specific properties
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            val totalItems = listState.layoutInfo.totalItemsCount
-            Pair(lastVisibleItem?.index, totalItems)
+            val lastItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            Pair(lastItem?.index, listState.layoutInfo.totalItemsCount)
         }
             .distinctUntilChanged()
-            .collect { (lastVisibleIndex, totalItems) ->
-                if (lastVisibleIndex != null) {
-                    if (postsState is PostsState.Success &&
-                        (postsState as PostsState.Success).currentAfter != null &&
-                        lastVisibleIndex >= (totalItems - Constants.LOAD_MORE_BUFFER)
-                    ) {
+            .collect { (lastIndex, total) ->
+                if (lastIndex != null && postsState is PostsState.Success) {
+                    val hasMore = (postsState as PostsState.Success).currentAfter != null
+                    if (hasMore && lastIndex >= (total - Constants.LOAD_MORE_BUFFER)) {
                         viewModel.loadPosts(LoadType.MORE)
                     }
+                }
+            }
+    }
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
+
+            layoutInfo.visibleItemsInfo.minByOrNull {
+                kotlin.math.abs((it.offset + it.size / 2) - viewportCenter)
+            }?.index
+        }
+            .distinctUntilChanged()
+            .collect { focusedIndex ->
+                focusedIndex?.let {
+                    Logger.d("TODO - auto play post at: $it")
                 }
             }
     }
