@@ -17,7 +17,7 @@
     <string name="settings">Settings</string>
 
     <!-- General -->
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading…</string>
     <string name="error">Error</string>
     <string name="retry">Retry</string>
 
@@ -27,10 +27,15 @@
     <string name="comments">Comments</string>
     <string name="share">Share</string>
 
-    <!-- Communities screen -->
+    <!-- Subreddit List screen -->
     <string name="join">Join</string>
     <string name="joined">Joined</string>
     <string name="members">members</string>
+    <string name="favorites">Favorites</string>
+    <plurals name="subreddits">
+        <item quantity="one">%d subreddit</item>
+        <item quantity="other">%d subreddits</item>
+    </plurals>
 
     <!-- Chat screen -->
     <string name="messages">Messages</string>

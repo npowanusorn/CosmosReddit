@@ -47,13 +47,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,11 +64,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import com.hamburghini.cosmos.R
 import com.hamburghini.cosmos.data.model.AuthState
 import com.hamburghini.cosmos.data.model.SubredditAboutData
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.Logger
+import com.hamburghini.cosmos.data.model.iconUrl
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -139,7 +144,7 @@ fun SubredditListScreen(
                 if (authState is AuthState.LoggedIn) {
                     item {
                         SectionHeader(
-                            title = "My Communities",
+                            title = "My Subreddits",
                             count = mySubreddits.size,
                             showLoadAll = uiState.hasMoreMy,
                             isLoading = uiState.isLoadingMy,
@@ -296,7 +301,7 @@ private fun SectionHeader(
 
                 if (count > 0) {
                     Text(
-                        text = "$count communities",
+                        text = pluralStringResource(R.plurals.subreddits, count, count),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -347,31 +352,38 @@ private fun SubredditCard(
                     .size(48.dp)
                     .clip(CircleShape)
             ) {
-                val iconUrl = subreddit.communityIcon?.takeIf { it.isNotBlank() }
-                    ?: subreddit.iconImg?.takeIf { it.isNotBlank() }
+                val iconUrl = subreddit.iconUrl()
+                var showFallback by remember { mutableStateOf(iconUrl == null) }
 
-                if (iconUrl != null) {
-                    AsyncImage(
-                        model = iconUrl,
-                        contentDescription = "${subreddit.displayName} icon",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                if (isSubscribed) RedditOrange else MaterialTheme.colorScheme.primary
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = subreddit.displayName.take(2).uppercase(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Bold
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (iconUrl != null) {
+                        AsyncImage(
+                            model = iconUrl,
+                            contentDescription = "${subreddit.displayName} icon",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            onState = { state ->
+                                showFallback = state is AsyncImagePainter.State.Error
+                            }
                         )
+                    }
+
+                    if (showFallback) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    if (isSubscribed) RedditOrange else MaterialTheme.colorScheme.primary
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = subreddit.displayName.take(2).uppercase(),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

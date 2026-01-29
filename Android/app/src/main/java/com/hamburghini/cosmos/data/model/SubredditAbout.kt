@@ -1,6 +1,8 @@
 package com.hamburghini.cosmos.data.model
 
 import com.google.gson.annotations.SerializedName
+import com.hamburghini.cosmos.core.util.Logger
+import java.net.URI
 import kotlin.random.Random
 
 data class SubredditAbout(
@@ -81,4 +83,19 @@ data class SubredditAboutData(
             url = "https://www.reddit.com/r/AndroidDev/"
         )
     }
+}
+
+fun SubredditAboutData.iconUrl(): String? {
+    Logger.i("subreddit: $displayName, iconImg: $iconImg, communityIcon: $communityIcon, headerImg: $headerImg")
+    val fullUrl = when {
+        !communityIcon.isNullOrBlank() -> communityIcon
+        !iconImg.isNullOrBlank() -> iconImg
+        !headerImg.isNullOrBlank() -> headerImg
+        else -> null
+    }
+
+    if (fullUrl.isNullOrBlank()) return null
+    val uri = URI(fullUrl)
+    val cleanUrl = URI(uri.scheme, uri.authority, uri.path, null, null).toString()
+    return cleanUrl
 }
