@@ -43,15 +43,6 @@ class HomeViewModel @Inject constructor(
             profileManager.authState.collect { authState ->
                 handleAuthStateChange(authState)
             }
-            repository.postsState.collect { state ->
-                if (state is PostsState.Success) {
-                    _uiState.update {
-                        it.copy(
-                            hasMore = state.currentAfter != null
-                        )
-                    }
-                }
-            }
         }
     }
 
@@ -168,14 +159,14 @@ class HomeViewModel @Inject constructor(
     }
 
     fun loadMorePosts() {
-        if (_uiState.value.isLoadingMore || currentAfter == null) return
+//        if (_uiState.value.isLoadingMore || currentAfter == null) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingMore = true)
 
             try {
                 val isLoggedIn = profileManager.isLoggedIn()
-                if (isLoggedIn && _uiState.value.isPersonalized) {
+                if (isLoggedIn) {
                     // Load more from user's personalized feed
                     when (_uiState.value.currentSortType) {
                         SortType.HOT -> repository.getMyHotPosts(currentAfter)

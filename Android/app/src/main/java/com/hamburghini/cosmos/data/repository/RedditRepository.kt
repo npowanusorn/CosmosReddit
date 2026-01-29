@@ -104,11 +104,15 @@ class RedditRepository @Inject constructor(
             throw IllegalStateException("User not logged in")
         }
 
+        val postAfter = if (_postsState.value is PostsState.Success) {
+            (_postsState.value as PostsState.Success).currentAfter
+        } else null
+
         _postsState.value = PostsState.Loading(
             previous = _postsState.value as? PostsState.Success
         )
 
-        val response = authenticatedApiService.getMyHotPosts(after, limit)
+        val response = authenticatedApiService.getMyHotPosts(postAfter, limit)
         handlePostsResponse(response, SortType.HOT)
     }
 
@@ -167,9 +171,11 @@ class RedditRepository @Inject constructor(
                 val listing = response.body()
                 if (listing != null) {
                     val newPosts = listing.data.children.map { it.data }
+                    Logger.d("newPosts size: ${newPosts.size} || names: ${newPosts.map { it.name }}")
                     val newMap: Map<String, Post> = newPosts.associateBy { it.name }
+                    val previousMap = (_postsState.value as? PostsState.Loading)?.previous?.posts
                     _postsState.value = PostsState.Success(
-                        posts = newMap,
+                        posts = previousMap?.plus(newMap) ?: newMap,
                         sortType = sortType,
                         currentAfter = listing.data.after
                     )

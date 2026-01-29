@@ -1,8 +1,5 @@
 package com.hamburghini.cosmos.ui.screens.home
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -48,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -66,6 +64,7 @@ import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PostUtils
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.SortType
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -91,16 +90,26 @@ fun HomeScreen(
 
     // Load more posts when reaching the end
     LaunchedEffect(listState) {
-        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-        val totalItems = listState.layoutInfo.totalItemsCount
-
-        if (lastVisibleIndex != null &&
-            lastVisibleIndex >= totalItems - 3 &&
-            postsState !is PostsState.Loading &&
-            !uiState.isLoadingMore &&
-            uiState.hasMore) {
-            viewModel.loadMorePosts()
+        snapshotFlow {
+            // Monitor these two specific properties
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            val totalItems = listState.layoutInfo.totalItemsCount
+            Pair(lastVisibleItem?.index, totalItems)
         }
+            .distinctUntilChanged()
+            .collect { (lastVisibleIndex, totalItems) ->
+                if (lastVisibleIndex != null) {
+                    Logger.d("lastVisibleIndex: $lastVisibleIndex || totalItems: $totalItems")
+                    Logger.d("uiState: $uiState")
+
+                    if (postsState is PostsState.Success &&
+                        (postsState as PostsState.Success).currentAfter != null &&
+                        lastVisibleIndex >= (totalItems - Constants.LOAD_MORE_BUFFER)
+                    ) {
+                        viewModel.loadMorePosts()
+                    }
+                }
+            }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
