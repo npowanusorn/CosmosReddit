@@ -52,7 +52,6 @@ class HomeViewModel @Inject constructor(
      * Load posts immediately on first state emission
      */
     private fun handleAuthStateChange(authState: AuthState) {
-        Logger.d("handleAuthStateChange: $authState")
         when (authState) {
             is AuthState.LoggedIn -> {
                 val wasLoggedIn = lastAuthStateWasLoggedIn
@@ -98,8 +97,6 @@ class HomeViewModel @Inject constructor(
         // Don't reload if we're already loading the same sort type, unless forced
 //        if (!forceRefresh && _uiState.value.currentSortType == sortType) return
 
-        Logger.d("loadPosts")
-
         viewModelScope.launch {
             if (loadType == LoadType.MORE || loadType == LoadType.INITIAL) {
                 _uiState.value = _uiState.value.copy(isLoadingMore = true)
@@ -109,28 +106,16 @@ class HomeViewModel @Inject constructor(
                 val isLoggedIn = profileManager.isLoggedIn()
                 if (isLoggedIn) {
                     // Load user's personalized feed
-                    when (sortType) {
-                        SortType.HOT -> repository.getMyHotPosts(loadType)
-                        SortType.BEST -> repository.getMyBestPosts()
-                        SortType.NEW -> repository.getMyNewPosts()
-                        SortType.TOP -> repository.getMyTopPosts(timeframe = "day")
-                        SortType.RISING -> repository.getHotPosts("all") // Fallback to public for rising
-                    }
+                    loadAuthenticatedPosts(sortType, loadType)
                 } else {
                     // Load public feed
-                    when (sortType) {
-                        SortType.HOT -> repository.getHotPosts("all")
-                        SortType.BEST -> repository.getHotPosts("all") // Fallback to hot for public
-                        SortType.NEW -> repository.getNewPosts("all")
-                        SortType.TOP -> repository.getTopPosts("all", "day")
-                        SortType.RISING -> repository.getRisingPosts("all")
-                    }
+                    loadPublicPosts(sortType, loadType)
                 }
             } catch (e: IllegalStateException) {
                 // User not logged in for authenticated endpoint
                 if (e.message?.contains("not logged in") == true) {
                     // Fallback to public feed
-                    loadPublicPosts(sortType)
+                    loadPublicPosts(sortType, loadType)
                 } else {
 //                    _uiState.value = _uiState.value.copy(
 //                        isLoading = false,
@@ -146,20 +131,26 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun loadPublicPosts(sortType: SortType) {
+    private fun loadAuthenticatedPosts(sortType: SortType, loadType: LoadType) {
         viewModelScope.launch {
-            try {
-                when (sortType) {
-                    SortType.HOT, SortType.BEST -> repository.getHotPosts("all")
-                    SortType.NEW -> repository.getNewPosts("all")
-                    SortType.TOP -> repository.getTopPosts("all", "day")
-                    SortType.RISING -> repository.getRisingPosts("all")
-                }
-            } catch (e: Exception) {
-//                _uiState.value = _uiState.value.copy(
-//                    isLoading = false,
-//                    error = "Error loading posts: ${e.message}"
-//                )
+            when (sortType) {
+                SortType.HOT -> repository.getMyHotPosts(loadType)
+                SortType.BEST -> repository.getMyBestPosts(loadType)
+                SortType.NEW -> repository.getMyNewPosts(loadType)
+                SortType.TOP -> repository.getMyTopPosts(loadType = loadType, timeframe = "day")
+                SortType.RISING -> repository.getHotPosts(loadType = loadType, subreddit = "all") // Fallback to public for rising
+            }
+        }
+    }
+
+    private fun loadPublicPosts(sortType: SortType, loadType: LoadType) {
+        viewModelScope.launch {
+            when (sortType) {
+                SortType.HOT -> repository.getHotPosts(loadType, "all")
+                SortType.BEST -> repository.getHotPosts(loadType, "all") // Fallback to hot for public
+                SortType.NEW -> repository.getNewPosts(loadType, "all")
+                SortType.TOP -> repository.getTopPosts(loadType, "all", "day")
+                SortType.RISING -> repository.getRisingPosts(loadType, "all")
             }
         }
     }

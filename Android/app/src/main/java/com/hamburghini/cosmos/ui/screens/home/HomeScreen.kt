@@ -106,9 +106,6 @@ fun HomeScreen(
             .distinctUntilChanged()
             .collect { (lastVisibleIndex, totalItems) ->
                 if (lastVisibleIndex != null) {
-                    Logger.d("lastVisibleIndex: $lastVisibleIndex || totalItems: $totalItems")
-                    Logger.d("uiState: $uiState")
-
                     if (postsState is PostsState.Success &&
                         (postsState as PostsState.Success).currentAfter != null &&
                         lastVisibleIndex >= (totalItems - Constants.LOAD_MORE_BUFFER)

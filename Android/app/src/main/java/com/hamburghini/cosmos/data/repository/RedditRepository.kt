@@ -40,6 +40,7 @@ class RedditRepository @Inject constructor(
     // ==================== Public Posts Endpoints ====================
 
     suspend fun getHotPosts(
+        loadType: LoadType,
         subreddit: String = "all",
         after: String? = null,
         limit: Int = 25
@@ -47,10 +48,11 @@ class RedditRepository @Inject constructor(
         _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getHotPosts(subreddit, after, limit)
-        handlePostsResponse(LoadType.INITIAL, response, SortType.HOT)
+        handlePostsResponse(loadType, response, SortType.HOT)
     }
 
     suspend fun getNewPosts(
+        loadType: LoadType,
         subreddit: String = "all",
         after: String? = null,
         limit: Int = 25
@@ -58,10 +60,11 @@ class RedditRepository @Inject constructor(
         _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getNewPosts(subreddit, after, limit)
-        handlePostsResponse(LoadType.INITIAL, response, SortType.NEW)
+        handlePostsResponse(loadType, response, SortType.NEW)
     }
 
     suspend fun getTopPosts(
+        loadType: LoadType,
         subreddit: String = "all",
         time: String = "day",
         after: String? = null,
@@ -70,10 +73,11 @@ class RedditRepository @Inject constructor(
         _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getTopPosts(subreddit, time, after, limit)
-        handlePostsResponse(LoadType.INITIAL, response, SortType.TOP)
+        handlePostsResponse(loadType, response, SortType.TOP)
     }
 
     suspend fun getRisingPosts(
+        loadType: LoadType,
         subreddit: String = "all",
         after: String? = null,
         limit: Int = 25
@@ -81,7 +85,7 @@ class RedditRepository @Inject constructor(
         _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getRisingPosts(subreddit, after, limit)
-        handlePostsResponse(LoadType.INITIAL, response, SortType.RISING)
+        handlePostsResponse(loadType, response, SortType.RISING)
     }
 
     // ==================== Authenticated Posts Endpoints ====================
@@ -121,6 +125,7 @@ class RedditRepository @Inject constructor(
     }
 
     suspend fun getMyBestPosts(
+        loadType: LoadType,
         limit: Int = 25
     ) {
         if (!profileManager.isLoggedIn()) {
@@ -136,10 +141,11 @@ class RedditRepository @Inject constructor(
         )
 
         val response = authenticatedApiService.getMyBestPosts(after, limit)
-        handlePostsResponse(LoadType.INITIAL, response, SortType.BEST)
+        handlePostsResponse(loadType, response, SortType.BEST)
     }
 
     suspend fun getMyNewPosts(
+        loadType: LoadType,
         limit: Int = 25
     ) {
         if (!profileManager.isLoggedIn()) {
@@ -155,10 +161,11 @@ class RedditRepository @Inject constructor(
         )
 
         val response = authenticatedApiService.getMyNewPosts(after, limit)
-        handlePostsResponse(LoadType.INITIAL, response, SortType.NEW)
+        handlePostsResponse(loadType, response, SortType.NEW)
     }
 
     suspend fun getMyTopPosts(
+        loadType: LoadType,
         limit: Int = 25,
         timeframe: String = "day"
     ) {
@@ -175,7 +182,7 @@ class RedditRepository @Inject constructor(
         )
 
         val response = authenticatedApiService.getMyTopPosts(after, limit, timeframe)
-        handlePostsResponse(LoadType.INITIAL, response, SortType.TOP)
+        handlePostsResponse(loadType, response, SortType.TOP)
     }
 
     private fun handlePostsResponse(
@@ -188,7 +195,6 @@ class RedditRepository @Inject constructor(
                 val listing = response.body()
                 if (listing != null) {
                     val newPosts = listing.data.children.map { it.data }
-                    Logger.d("newPosts size: ${newPosts.size} || names: ${newPosts.map { it.name }}")
                     val newMap: Map<String, Post> = newPosts.associateBy { it.name }
                     val previousMap = (_postsState.value as? PostsState.LoadingMore)?.previous?.posts
                     if (loadType == LoadType.MORE) {

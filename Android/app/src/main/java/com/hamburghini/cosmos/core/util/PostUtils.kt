@@ -113,7 +113,6 @@ object PostUtils {
         val width = source.width
         val height = source.height
         val aspectRatio = width.toFloat() / height.toFloat()
-        Logger.i("url: $url")
         return Pair(url, aspectRatio)
     }
 
