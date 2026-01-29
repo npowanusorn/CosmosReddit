@@ -14,8 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -46,12 +44,10 @@ class RedditRepository @Inject constructor(
         after: String? = null,
         limit: Int = 25
     ) {
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
-        )
+        _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getHotPosts(subreddit, after, limit)
-        handlePostsResponse(response, SortType.HOT)
+        handlePostsResponse(LoadType.INITIAL, response, SortType.HOT)
     }
 
     suspend fun getNewPosts(
@@ -59,12 +55,10 @@ class RedditRepository @Inject constructor(
         after: String? = null,
         limit: Int = 25
     ) {
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
-        )
+        _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getNewPosts(subreddit, after, limit)
-        handlePostsResponse(response, SortType.NEW)
+        handlePostsResponse(LoadType.INITIAL, response, SortType.NEW)
     }
 
     suspend fun getTopPosts(
@@ -73,12 +67,10 @@ class RedditRepository @Inject constructor(
         after: String? = null,
         limit: Int = 25
     ) {
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
-        )
+        _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getTopPosts(subreddit, time, after, limit)
-        handlePostsResponse(response, SortType.TOP)
+        handlePostsResponse(LoadType.INITIAL, response, SortType.TOP)
     }
 
     suspend fun getRisingPosts(
@@ -86,83 +78,108 @@ class RedditRepository @Inject constructor(
         after: String? = null,
         limit: Int = 25
     ) {
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
-        )
+        _postsState.value = PostsState.InitialLoading
 
         val response = publicApiService.getRisingPosts(subreddit, after, limit)
-        handlePostsResponse(response, SortType.RISING)
+        handlePostsResponse(LoadType.INITIAL, response, SortType.RISING)
     }
 
     // ==================== Authenticated Posts Endpoints ====================
 
     suspend fun getMyHotPosts(
-        after: String? = null,
+        loadType: LoadType,
         limit: Int = 25
     ) {
         if (!profileManager.isLoggedIn()) {
             throw IllegalStateException("User not logged in")
         }
 
-        val postAfter = if (_postsState.value is PostsState.Success) {
-            (_postsState.value as PostsState.Success).currentAfter
-        } else null
+        val response = when (loadType) {
+            LoadType.INITIAL -> {
+                _postsState.value = PostsState.InitialLoading
+                authenticatedApiService.getMyHotPosts(null, limit)
+            }
+            LoadType.REFRESH -> {
+                _postsState.value = PostsState.Refresh(
+                    previous = _postsState.value as PostsState.Success
+                )
+                authenticatedApiService.getMyHotPosts(null, limit)
+            }
+            LoadType.MORE -> {
+                val after = if (_postsState.value is PostsState.Success) {
+                    (_postsState.value as PostsState.Success).currentAfter
+                } else null
 
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
-        )
+                _postsState.value = PostsState.LoadingMore(
+                    previous = _postsState.value as PostsState.Success
+                )
 
-        val response = authenticatedApiService.getMyHotPosts(postAfter, limit)
-        handlePostsResponse(response, SortType.HOT)
+                authenticatedApiService.getMyHotPosts(after, limit)
+            }
+        }
+        handlePostsResponse(loadType, response, SortType.HOT)
     }
 
     suspend fun getMyBestPosts(
-        after: String? = null,
         limit: Int = 25
     ) {
         if (!profileManager.isLoggedIn()) {
             throw IllegalStateException("User not logged in")
         }
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
+
+        val after = if (_postsState.value is PostsState.Success) {
+            (_postsState.value as PostsState.Success).currentAfter
+        } else null
+
+        _postsState.value = PostsState.LoadingMore(
+            previous = _postsState.value as PostsState.Success
         )
 
         val response = authenticatedApiService.getMyBestPosts(after, limit)
-        handlePostsResponse(response, SortType.BEST)
+        handlePostsResponse(LoadType.INITIAL, response, SortType.BEST)
     }
 
     suspend fun getMyNewPosts(
-        after: String? = null,
         limit: Int = 25
     ) {
         if (!profileManager.isLoggedIn()) {
             throw IllegalStateException("User not logged in")
         }
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
+
+        val after = if (_postsState.value is PostsState.Success) {
+            (_postsState.value as PostsState.Success).currentAfter
+        } else null
+
+        _postsState.value = PostsState.LoadingMore(
+            previous = _postsState.value as PostsState.Success
         )
 
         val response = authenticatedApiService.getMyNewPosts(after, limit)
-        handlePostsResponse(response, SortType.NEW)
+        handlePostsResponse(LoadType.INITIAL, response, SortType.NEW)
     }
 
     suspend fun getMyTopPosts(
-        after: String? = null,
         limit: Int = 25,
         timeframe: String = "day"
     ) {
         if (!profileManager.isLoggedIn()) {
             throw IllegalStateException("User not logged in")
         }
-        _postsState.value = PostsState.Loading(
-            previous = _postsState.value as? PostsState.Success
+
+        val after = if (_postsState.value is PostsState.Success) {
+            (_postsState.value as PostsState.Success).currentAfter
+        } else null
+
+        _postsState.value = PostsState.LoadingMore(
+            previous = _postsState.value as PostsState.Success
         )
 
         val response = authenticatedApiService.getMyTopPosts(after, limit, timeframe)
-        handlePostsResponse(response, SortType.TOP)
+        handlePostsResponse(LoadType.INITIAL, response, SortType.TOP)
     }
 
     private fun handlePostsResponse(
+        loadType: LoadType,
         response: Response<RedditListingResponse<Post>>,
         sortType: SortType
     ) {
@@ -173,12 +190,20 @@ class RedditRepository @Inject constructor(
                     val newPosts = listing.data.children.map { it.data }
                     Logger.d("newPosts size: ${newPosts.size} || names: ${newPosts.map { it.name }}")
                     val newMap: Map<String, Post> = newPosts.associateBy { it.name }
-                    val previousMap = (_postsState.value as? PostsState.Loading)?.previous?.posts
-                    _postsState.value = PostsState.Success(
-                        posts = previousMap?.plus(newMap) ?: newMap,
-                        sortType = sortType,
-                        currentAfter = listing.data.after
-                    )
+                    val previousMap = (_postsState.value as? PostsState.LoadingMore)?.previous?.posts
+                    if (loadType == LoadType.MORE) {
+                        _postsState.value = PostsState.Success(
+                            posts = previousMap?.plus(newMap) ?: newMap,
+                            sortType = sortType,
+                            currentAfter = listing.data.after
+                        )
+                    } else {
+                        _postsState.value = PostsState.Success(
+                            posts = newMap,
+                            sortType = sortType,
+                            currentAfter = listing.data.after
+                        )
+                    }
                 } else {
                     _postsState.value = PostsState.Error(
                         message = "No data received",
@@ -516,8 +541,12 @@ class RedditRepository @Inject constructor(
 
 sealed interface PostsState {
     data object Idle : PostsState
-    data class Loading(
-        val previous: Success? = null
+    data object InitialLoading : PostsState
+    data class LoadingMore(
+        val previous: Success
+    ) : PostsState
+    data class Refresh(
+        val previous: Success?
     ) : PostsState
     data class Success(
         val posts: Map<String, Post>,
@@ -537,4 +566,8 @@ sealed interface ActionResult {
 
 enum class SortType {
     HOT, BEST, NEW, TOP, RISING
+}
+
+enum class LoadType {
+    INITIAL, REFRESH, MORE
 }

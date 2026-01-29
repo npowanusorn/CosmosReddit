@@ -36,6 +36,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +64,7 @@ import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
 import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PostUtils
+import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.SortType
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -78,6 +81,10 @@ fun HomeScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val pullToRefreshState = rememberPullToRefreshState()
+    val isRefreshing by remember {
+        derivedStateOf { postsState is PostsState.Refresh }
+    }
 
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var showPostMenu by remember { mutableStateOf(false) }
@@ -106,7 +113,7 @@ fun HomeScreen(
                         (postsState as PostsState.Success).currentAfter != null &&
                         lastVisibleIndex >= (totalItems - Constants.LOAD_MORE_BUFFER)
                     ) {
-                        viewModel.loadMorePosts()
+                        viewModel.loadPosts(LoadType.MORE)
                     }
                 }
             }
@@ -114,8 +121,16 @@ fun HomeScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
-            isRefreshing = postsState is PostsState.Loading,
-            onRefresh = { viewModel.refreshPosts() },
+            isRefreshing = isRefreshing,
+            state = pullToRefreshState,
+            onRefresh = { viewModel.loadPosts(LoadType.REFRESH) },
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    state = pullToRefreshState,
+                    isRefreshing = isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            },
             modifier = Modifier.fillMaxSize()
         ) {
             LazyColumn(
@@ -141,7 +156,8 @@ fun HomeScreen(
 
                 val content: PostsState? = when (postsState) {
                     is PostsState.Error -> (postsState as PostsState.Error).previous
-                    is PostsState.Loading -> (postsState as PostsState.Loading).previous
+                    is PostsState.LoadingMore -> (postsState as PostsState.LoadingMore).previous
+                    is PostsState.Refresh -> (postsState as PostsState.Refresh).previous
                     is PostsState.Success -> postsState
                     else -> null
                 }
@@ -218,9 +234,23 @@ fun HomeScreen(
                             item {
                                 ErrorMessage(
                                     error = errorState.message,
-                                    onRetry = { viewModel.refreshPosts() },
+                                    onRetry = { viewModel.loadPosts(LoadType.MORE) },
                                     onDismiss = { viewModel.clearError() }
                                 )
+                            }
+                        }
+                        is PostsState.InitialLoading, PostsState.Idle -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    LoadingIndicator(
+                                        color = RedditOrange
+                                    )
+                                }
                             }
                         }
                         else -> Unit

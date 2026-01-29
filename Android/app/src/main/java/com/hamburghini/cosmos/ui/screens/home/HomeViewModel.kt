@@ -7,6 +7,7 @@ import com.hamburghini.cosmos.data.manager.ProfileManager
 import com.hamburghini.cosmos.data.model.AuthState
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.repository.ActionResult
+import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.RedditRepository
 import com.hamburghini.cosmos.data.repository.SortType
@@ -58,8 +59,8 @@ class HomeViewModel @Inject constructor(
                 lastAuthStateWasLoggedIn = true
 
                 // If first time or user just logged in, load personalized feed
-                if (wasLoggedIn == null || wasLoggedIn == false) {
-                    loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                if (wasLoggedIn == null || !wasLoggedIn) {
+                    loadPosts(LoadType.INITIAL, _uiState.value.currentSortType)
                 }
             }
             is AuthState.NotLoggedIn -> {
@@ -68,7 +69,7 @@ class HomeViewModel @Inject constructor(
 
                 // If first time or user just logged out, load public feed
                 if (wasLoggedIn == null || wasLoggedIn == true) {
-                    loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                    loadPosts(LoadType.INITIAL, _uiState.value.currentSortType)
                 }
             }
             is AuthState.LoggingIn -> {
@@ -84,27 +85,32 @@ class HomeViewModel @Inject constructor(
 
                 // Load public feed on error
                 if (wasLoggedIn == null || wasLoggedIn == true) {
-                    loadPosts(_uiState.value.currentSortType, forceRefresh = true)
+                    loadPosts(LoadType.INITIAL, _uiState.value.currentSortType)
                 }
             }
         }
     }
 
     fun loadPosts(
-        sortType: SortType = SortType.HOT,
-        forceRefresh: Boolean = false
+        loadType: LoadType,
+        sortType: SortType = SortType.HOT
     ) {
         // Don't reload if we're already loading the same sort type, unless forced
-        if (!forceRefresh && _uiState.value.currentSortType == sortType) return
+//        if (!forceRefresh && _uiState.value.currentSortType == sortType) return
+
+        Logger.d("loadPosts")
 
         viewModelScope.launch {
+            if (loadType == LoadType.MORE || loadType == LoadType.INITIAL) {
+                _uiState.value = _uiState.value.copy(isLoadingMore = true)
+            }
 
             try {
                 val isLoggedIn = profileManager.isLoggedIn()
                 if (isLoggedIn) {
                     // Load user's personalized feed
                     when (sortType) {
-                        SortType.HOT -> repository.getMyHotPosts()
+                        SortType.HOT -> repository.getMyHotPosts(loadType)
                         SortType.BEST -> repository.getMyBestPosts()
                         SortType.NEW -> repository.getMyNewPosts()
                         SortType.TOP -> repository.getMyTopPosts(timeframe = "day")
@@ -156,46 +162,6 @@ class HomeViewModel @Inject constructor(
 //                )
             }
         }
-    }
-
-    fun loadMorePosts() {
-//        if (_uiState.value.isLoadingMore || currentAfter == null) return
-
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingMore = true)
-
-            try {
-                val isLoggedIn = profileManager.isLoggedIn()
-                if (isLoggedIn) {
-                    // Load more from user's personalized feed
-                    when (_uiState.value.currentSortType) {
-                        SortType.HOT -> repository.getMyHotPosts(currentAfter)
-                        SortType.BEST -> repository.getMyBestPosts(currentAfter)
-                        SortType.NEW -> repository.getMyNewPosts(currentAfter)
-                        SortType.TOP -> repository.getMyTopPosts(currentAfter, timeframe = "day")
-                        SortType.RISING -> repository.getHotPosts("all", currentAfter)
-                    }
-                } else {
-                    // Load more from public feed
-                    when (_uiState.value.currentSortType) {
-                        SortType.HOT, SortType.BEST -> repository.getHotPosts("all", currentAfter)
-                        SortType.NEW -> repository.getNewPosts("all", currentAfter)
-                        SortType.TOP -> repository.getTopPosts("all", "day", currentAfter)
-                        SortType.RISING -> repository.getRisingPosts("all", currentAfter)
-                    }
-                }
-            } catch (e: Exception) {
-//                _uiState.value = _uiState.value.copy(
-//                    isLoadingMore = false,
-//                    error = "Error loading more posts: ${e.message}"
-//                )
-            }
-        }
-    }
-
-    fun refreshPosts() {
-        currentAfter = null
-        loadPosts(_uiState.value.currentSortType, forceRefresh = true)
     }
 
     fun clearError() {
@@ -288,14 +254,13 @@ class HomeViewModel @Inject constructor(
      * Force load posts for a specific sort type (called from UI)
      */
     fun loadPostsForSort(sortType: SortType) {
-        loadPosts(sortType, forceRefresh = false)
+        loadPosts(LoadType.INITIAL, sortType)
     }
 }
 
 data class HomeUiState(
     val isLoadingMore: Boolean = false,
     val currentSortType: SortType = SortType.HOT,
-    val hasMore: Boolean = false,
     val isPersonalized: Boolean = false
 )
 
