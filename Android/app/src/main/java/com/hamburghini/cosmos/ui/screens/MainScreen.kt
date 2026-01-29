@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
@@ -138,9 +139,12 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            val homeListState = rememberLazyListState()
+            val subredditListState = rememberLazyListState()
+
             when (currentTab) {
-                BottomNavDestination.HOME -> HomeScreen()
-                BottomNavDestination.SUBREDDITS_LIST -> SubredditListScreen()
+                BottomNavDestination.HOME -> HomeScreen(listState = homeListState)
+                BottomNavDestination.SUBREDDITS_LIST -> SubredditListScreen(listState = subredditListState)
                 BottomNavDestination.CHAT -> ChatScreen(profileViewModel)
                 BottomNavDestination.PROFILE -> ProfileScreen(
                     onLoginClick = onLoginClick,

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -76,6 +77,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubredditListScreen(
+    listState: LazyListState,
     viewModel: SubredditListViewModel = hiltViewModel()
 ) {
     val authState by viewModel.authState.collectAsState()
@@ -84,7 +86,6 @@ fun SubredditListScreen(
     val favoriteSubreddits by viewModel.favoriteSubreddits.collectAsState()
     val popularSubreddits by viewModel.popularSubreddits.collectAsState()
 
-    val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
     val showScrollToTopFab by remember {
