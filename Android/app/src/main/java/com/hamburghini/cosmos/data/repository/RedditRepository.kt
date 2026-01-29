@@ -543,6 +543,20 @@ class RedditRepository @Inject constructor(
         val username = profileManager.getCurrentAccount()?.username ?: return false
         return subscriptionCacheManager.clearCache(username)
     }
+
+    suspend fun getSubredditAbout(
+        subreddit: String
+    ): Response<SubredditAbout> {
+        return try {
+            if (profileManager.isLoggedIn()) {
+                authenticatedApiService.getSubredditAbout(subreddit = subreddit)
+            } else {
+                publicApiService.getSubredditAbout(subreddit = subreddit)
+            }
+        } catch (e: Exception) {
+            throw e
+        }
+    }
 }
 
 sealed interface PostsState {
