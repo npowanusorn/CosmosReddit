@@ -1,4 +1,4 @@
-package com.hamburghini.cosmos.ui.screens.home
+package com.hamburghini.cosmos.ui.screens.subredditdetail
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,132 +14,87 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hamburghini.cosmos.core.constants.Constants
-import com.hamburghini.cosmos.data.model.Post
-import com.hamburghini.cosmos.ui.activity.PostDetailActivity
-import com.hamburghini.cosmos.ui.activity.VideoPlayerActivity
-import com.hamburghini.cosmos.ui.components.PostCard
-import com.hamburghini.cosmos.ui.components.PostMenuBottomSheet
-import com.hamburghini.cosmos.ui.theme.RedditOrange
 import com.hamburghini.cosmos.core.util.Logger
-import com.hamburghini.cosmos.core.util.PostUtils
+import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.SortType
+import com.hamburghini.cosmos.ui.activity.PostDetailActivity
 import com.hamburghini.cosmos.ui.activity.SubredditDetailActivity
+import com.hamburghini.cosmos.ui.activity.VideoPlayerActivity
+import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.SortFilterRow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import com.hamburghini.cosmos.ui.theme.RedditOrange
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun HomeScreen(
-    listState: LazyListState,
-    viewModel: HomeViewModel = hiltViewModel()
+fun SubredditPostsSection(
+    postsState: PostsState,
+    isRefreshing: Boolean,
+    onSortClick: () -> Unit,
+    onRefresh: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val postsState by viewModel.postsState.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
+
+    val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val pullToRefreshState = rememberPullToRefreshState()
     val isRefreshing by remember {
         derivedStateOf { postsState is PostsState.Refresh }
     }
-    val blurNsfw by viewModel.blurNsfw.collectAsStateWithLifecycle()
-
-    var selectedPost by remember { mutableStateOf<Post?>(null) }
-    var showPostMenu by remember { mutableStateOf(false) }
-
     val showScrollToTopFab by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 1
         }
     }
 
-    // Load more posts when reaching the end
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val lastItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            Pair(lastItem?.index, listState.layoutInfo.totalItemsCount)
-        }
-            .distinctUntilChanged()
-            .collect { (lastIndex, total) ->
-                if (lastIndex != null && postsState is PostsState.Success) {
-                    val hasMore = (postsState as PostsState.Success).currentAfter != null
-                    if (hasMore && lastIndex >= (total - Constants.LOAD_MORE_BUFFER)) {
-                        viewModel.loadPosts(LoadType.MORE)
-                    }
-                }
-            }
-    }
-
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val layoutInfo = listState.layoutInfo
-            val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
-
-            layoutInfo.visibleItemsInfo.minByOrNull {
-                kotlin.math.abs((it.offset + it.size / 2) - viewportCenter)
-            }?.index
-        }
-            .distinctUntilChanged()
-            .collect { focusedIndex ->
-                focusedIndex?.let {
-                    Logger.d("TODO - auto play post at: $it")
-                }
-            }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             state = pullToRefreshState,
-            onRefresh = { viewModel.loadPosts(LoadType.REFRESH) },
+            onRefresh = onRefresh,
             indicator = {
                 PullToRefreshDefaults.LoadingIndicator(
                     state = pullToRefreshState,
@@ -313,138 +269,34 @@ fun HomeScreen(
             }
         }
     }
-
-    // Post Menu Bottom Sheet
-    if (showPostMenu && selectedPost != null) {
-        // Get the latest post state from the view model
-        val currentPost = viewModel.getPost(selectedPost!!.name) ?: selectedPost!!
-
-        PostMenuBottomSheet(
-            post = currentPost,
-            isLoggedIn = viewModel.isLoggedIn(),
-            onDismissRequest = {
-                showPostMenu = false
-                selectedPost = null
-            },
-            onSaveClick = {
-                currentPost.let { post ->
-                    // Toggle save state
-                    val newSaveState = !post.saved
-                    viewModel.savePost(post.name, newSaveState)
-
-                    // Update selected post immediately for UI feedback
-                    selectedPost = post.copy(saved = newSaveState)
-
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            if (newSaveState) "Post saved" else "Post unsaved"
-                        )
-                    }
-                }
-            },
-            onHideClick = {
-                currentPost.let { post ->
-                    // TODO: Implement hide functionality
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            if (post.hidden == true) "TODO: Post unhidden" else "TODO: Post hidden"
-                        )
-                    }
-                }
-            },
-            onReportClick = {
-                currentPost.let { post ->
-                    // TODO: Navigate to report screen
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Report functionality coming soon")
-                    }
-                }
-            },
-            onShareClick = {
-                currentPost.let { post ->
-                    PostUtils.sharePost(context, post)
-                }
-            },
-            onCopyLinkClick = {
-                currentPost.let { post ->
-                    PostUtils.copyPostLink(context, post)
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Link copied to clipboard")
-                    }
-                }
-            },
-            onBlockUserClick = {
-                currentPost.let { post ->
-                    // TODO: Implement block user functionality
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Block user functionality coming soon")
-                    }
-                }
-            },
-            onViewProfileClick = {
-                currentPost.let { post ->
-                    // TODO: Navigate to user profile
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Navigate to u/${post.author}")
-                    }
-                }
-            },
-            onViewSubredditClick = {
-                currentPost.let { post ->
-                    // TODO: Navigate to subreddit
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Navigate to ${post.subreddit_name_prefixed}")
-                    }
-                }
-            }
-        )
-    }
-
 }
 
 @Composable
-private fun ErrorMessage(
-    error: String,
-    onRetry: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+fun PostsList(
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    content: @Composable () -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        state = pullToRefreshState,
+        modifier = Modifier.fillMaxSize()
     ) {
-        Text(
-            text = "Oops! Something went wrong",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = error,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedButton(
-                onClick = onRetry,
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 4.dp)
-                )
-                Text("Retry")
-            }
-        }
+        content()
     }
+}
+
+@Preview(
+    showBackground = true
+)
+@Composable
+private fun PreviewSubredditPostsSection() {
+    SubredditPostsSection(
+        isRefreshing = false,
+        onSortClick = {},
+        onRefresh = {},
+    )
 }

@@ -195,6 +195,7 @@ class RedditRepository @Inject constructor(
                 val listing = response.body()
                 if (listing != null) {
                     val newPosts = listing.data.children.map { it.data }
+                    Logger.d("newPosts: $newPosts")
                     val newMap: Map<String, Post> = newPosts.associateBy { it.name }
                     val previousMap = (_postsState.value as? PostsState.LoadingMore)?.previous?.posts
                     if (loadType == LoadType.MORE) {

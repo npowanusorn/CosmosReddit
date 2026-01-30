@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,15 +21,23 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,34 +45,59 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hamburghini.cosmos.R
+import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.model.SubredditAboutData
+import com.hamburghini.cosmos.data.repository.LoadType
+import com.hamburghini.cosmos.data.repository.PostsState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubredditDetailScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: SubredditDetailViewModel
 ) {
-//    SubredditDetailContent()
+
+    val postsState by viewModel.postsState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val blurNsfw by viewModel.blurNsfw.collectAsStateWithLifecycle()
+
+    var selectedPost by remember { mutableStateOf<Post?>(null) }
+    var showPostMenu by remember { mutableStateOf(false) }
+
+    SubredditDetailContent(
+        subreddit = SubredditAboutData.mock,
+        postsState = postsState,
+        onRefresh = {
+            viewModel.loadPosts(LoadType.REFRESH)
+        },
+        modifier = modifier
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubredditDetailContent(
     subreddit: SubredditAboutData,
+    postsState: PostsState,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    tabs: List<String> = listOf("Posts", "About", "Menu")
 ) {
-    var selectedTab by remember { mutableIntStateOf(2) }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = SubredditDetailTabs.entries
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
+//            .navigationBarsPadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
 
@@ -70,7 +105,7 @@ fun SubredditDetailContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp)
+                .height(250.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_background), // replace
@@ -87,27 +122,10 @@ fun SubredditDetailContent(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.6f)
+                                Color.Black.copy(alpha = 1f)
                             )
                         )
                     )
-            )
-
-            // Toolbar
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = { /* back */ }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
             )
 
             // Subreddit content
@@ -185,16 +203,16 @@ fun SubredditDetailContent(
         }
 
         // --- Tabs ---
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = selectedTab,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = Color(0xFFFF4500) // reddit orange
         ) {
-            tabs.forEachIndexed { index, title ->
+            tabs.forEachIndexed { index, tab ->
                 Tab(
                     selected = selectedTab == index,
                     onClick = { selectedTab = index },
-                    text = { Text(title) }
+                    text = { Text(tab.title) }
                 )
             }
         }
@@ -207,9 +225,11 @@ fun SubredditDetailContent(
             contentAlignment = Alignment.Center
         ) {
             if (selectedTab == 0) {
-                Text(
-                    text = "Selected tab: ${tabs[selectedTab]}",
-                    style = MaterialTheme.typography.bodyLarge
+                SubredditPostsSection(
+                    postsState = postsState,
+                    isRefreshing = false,
+                    onSortClick = {},
+                    onRefresh = onRefresh,
                 )
             } else if (selectedTab == 1) {
                 SubredditAboutSection(subreddit = subreddit)
