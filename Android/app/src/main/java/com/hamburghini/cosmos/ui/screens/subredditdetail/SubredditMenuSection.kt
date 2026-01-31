@@ -52,8 +52,7 @@ fun SubredditMenuSection(
     LazyColumn(
         modifier = modifier.fillMaxSize()
     ) {
-
-        // --- Menu Card ---
+        // Menu Card
         item {
             Card(
                 modifier = Modifier
@@ -69,7 +68,6 @@ fun SubredditMenuSection(
                 )
             ) {
                 Column {
-
                     MenuItemRow(
                         icon = Icons.AutoMirrored.Outlined.Rule,
                         title = "Rules",
@@ -130,7 +128,7 @@ fun SubredditMenuSection(
             }
         }
 
-        // --- Rules Section ---
+        // Rules Section
         if (showRulesSection) {
             item {
                 Column(
@@ -157,6 +155,118 @@ fun SubredditMenuSection(
     }
 }
 
+// Content version for use within LazyColumn items
+@Composable
+fun SubredditMenuSectionContent(
+    showRulesSection: Boolean = false,
+    onRulesClick: () -> Unit = {},
+    onModeratorsClick: () -> Unit = {},
+    onContactModsClick: () -> Unit = {},
+    onWikiClick: () -> Unit = {},
+    onShareClick: () -> Unit = {},
+    onViewInBrowserClick: () -> Unit = {},
+    onReportClick: () -> Unit = {},
+    rules: List<String> = emptyList(),
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        // Menu Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.surfaceVariant
+            ),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column {
+                MenuItemRow(
+                    icon = Icons.AutoMirrored.Outlined.Rule,
+                    title = "Rules",
+                    onClick = onRulesClick
+                )
+
+                Divider()
+
+                MenuItemRow(
+                    icon = Icons.Outlined.Security,
+                    title = "Moderators",
+                    onClick = onModeratorsClick
+                )
+
+                Divider()
+
+                MenuItemRow(
+                    icon = Icons.Outlined.Email,
+                    title = "Contact Moderators",
+                    onClick = onContactModsClick
+                )
+
+                Divider()
+
+                MenuItemRow(
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
+                    title = "Wiki",
+                    trailingIcon = Icons.AutoMirrored.Outlined.OpenInNew,
+                    onClick = onWikiClick
+                )
+
+                Divider()
+
+                MenuItemRow(
+                    icon = Icons.Outlined.Share,
+                    title = "Share Community",
+                    trailingIcon = null,
+                    onClick = onShareClick
+                )
+
+                Divider()
+
+                MenuItemRow(
+                    icon = Icons.Outlined.Public,
+                    title = "View in Browser",
+                    trailingIcon = Icons.AutoMirrored.Outlined.OpenInNew,
+                    onClick = onViewInBrowserClick
+                )
+
+                Divider()
+
+                MenuItemRow(
+                    icon = Icons.Outlined.Flag,
+                    title = "Report",
+                    onClick = onReportClick
+                )
+            }
+        }
+
+        // Rules Section
+        if (showRulesSection) {
+            Spacer(modifier = Modifier.padding(top = 16.dp))
+
+            Text(
+                text = "Community Rules",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            rules.forEachIndexed { index, rule ->
+                RuleItem(
+                    index = index + 1,
+                    text = rule
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun MenuItemRow(
     icon: ImageVector,
@@ -171,7 +281,6 @@ private fun MenuItemRow(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Icon(
             imageVector = icon,
             contentDescription = null,
@@ -223,9 +332,7 @@ private fun RuleItem(
     }
 }
 
-@Preview(
-    showBackground = true
-)
+@Preview(showBackground = true)
 @Composable
 private fun PreviewSubredditMenuSection() {
     SubredditMenuSection(

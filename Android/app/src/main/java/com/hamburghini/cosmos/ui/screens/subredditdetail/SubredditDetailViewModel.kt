@@ -10,6 +10,7 @@ import com.hamburghini.cosmos.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -22,7 +23,8 @@ class SubredditDetailViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
-    private val subredditName = MutableStateFlow<String?>(null)
+    private val _subredditName = MutableStateFlow<String?>(null)
+    val subredditName = _subredditName.asStateFlow()
 
     val postsState = repository.postsState
     val blurNsfw = settingsRepository.blurNsfwFlow
@@ -36,15 +38,21 @@ class SubredditDetailViewModel @Inject constructor(
         )
 
     fun setSubredditName(name: String) {
-        subredditName.value = name
-
+        _subredditName.value = name
         viewModelScope.launch {
             repository.getHotPosts(LoadType.INITIAL, name)
         }
     }
 
     fun loadPosts(loadType: LoadType) {
-        TODO("loadPosts")
+        val currentSubreddit = _subredditName.value ?: return
+        viewModelScope.launch {
+            when (loadType) {
+                LoadType.REFRESH -> repository.getHotPosts(LoadType.REFRESH, currentSubreddit)
+                LoadType.MORE -> repository.getHotPosts(LoadType.MORE, currentSubreddit)
+                LoadType.INITIAL -> repository.getHotPosts(LoadType.INITIAL, currentSubreddit)
+            }
+        }
     }
 }
 

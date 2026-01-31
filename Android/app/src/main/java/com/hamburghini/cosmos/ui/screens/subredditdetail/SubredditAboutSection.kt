@@ -40,7 +40,6 @@ fun SubredditAboutSection(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-
         // --- Description Section ---
         item {
             Section {
@@ -74,7 +73,6 @@ fun SubredditAboutSection(
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-
                         StatItem(
                             value = "${subreddit.accountsActive}",
                             label = "Members",
@@ -141,6 +139,115 @@ fun SubredditAboutSection(
                     if (subreddit.restrictCommenting == true) {
                         RestrictionChip(text = "Restricted Commenting")
                     }
+                }
+            }
+        }
+    }
+}
+
+// Content version for use within LazyColumn items
+@Composable
+fun SubredditAboutSectionContent(
+    subreddit: SubredditAboutData,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Description Section
+        Section {
+            SectionTitle("Description")
+            Text(
+                text = subreddit.description ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // Community Stats
+        Section {
+            SectionTitle("Community Stats")
+
+            Card(
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.surfaceVariant
+                ),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatItem(
+                        value = "${subreddit.accountsActive}",
+                        label = "Members",
+                        valueColor = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .height(48.dp)
+                            .width(1.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    )
+
+                    StatItem(
+                        value = "${subreddit.activeUserCount}",
+                        label = "Online",
+                        valueColor = Color(0xFF4CAF50),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        // Community Info
+        Section {
+            SectionTitle("Community Info")
+
+            InfoRow("Created", "${subreddit.createdUtc}")
+            InfoRow("Type", "${subreddit.subredditType}")
+            InfoRow("Submissions", "${subreddit.submissionType}")
+        }
+
+        // Content Restrictions
+        Section {
+            SectionTitle("Content Restrictions")
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (subreddit.over18) {
+                    RestrictionChip(
+                        text = "NSFW (18+)",
+                        background = Color(0xFFFF4444)
+                    )
+                }
+
+                if (subreddit.quarantine == true) {
+                    RestrictionChip(
+                        text = "Quarantined",
+                        background = Color(0xFFFFA500)
+                    )
+                }
+
+                if (subreddit.restrictPosting == true) {
+                    RestrictionChip(text = "Restricted Posting")
+                }
+
+                if (subreddit.restrictCommenting == true) {
+                    RestrictionChip(text = "Restricted Commenting")
                 }
             }
         }
@@ -227,9 +334,7 @@ private fun RestrictionChip(
     }
 }
 
-@Preview(
-    showBackground = true
-)
+@Preview(showBackground = true)
 @Composable
 private fun PreviewSubredditAboutSection() {
     SubredditAboutSection(
