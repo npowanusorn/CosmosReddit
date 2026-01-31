@@ -49,10 +49,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hamburghini.cosmos.core.constants.Constants
@@ -64,6 +66,7 @@ import com.hamburghini.cosmos.data.repository.SortType
 import com.hamburghini.cosmos.ui.activity.PostDetailActivity
 import com.hamburghini.cosmos.ui.activity.SubredditDetailActivity
 import com.hamburghini.cosmos.ui.activity.VideoPlayerActivity
+import com.hamburghini.cosmos.ui.components.ErrorMessage
 import com.hamburghini.cosmos.ui.components.PostCard
 import com.hamburghini.cosmos.ui.components.SortFilterRow
 import com.hamburghini.cosmos.ui.theme.RedditOrange
@@ -73,11 +76,17 @@ import kotlinx.coroutines.launch
 @Composable
 fun SubredditPostsSection(
     postsState: PostsState,
+    blurNsfw: Boolean,
     isRefreshing: Boolean,
+    currentSort: SortType,
+    isPersonalized: Boolean,
     onSortClick: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onSortChanged: (SortType) -> Unit,
+    onVote: (String, Int) -> Unit
 ) {
 
+    val context = LocalContext.current
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -89,6 +98,9 @@ fun SubredditPostsSection(
             listState.firstVisibleItemIndex > 1
         }
     }
+    var selectedPost by remember { mutableStateOf<Post?>(null) }
+    var showPostMenu by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
@@ -117,10 +129,10 @@ fun SubredditPostsSection(
             ) {
                 item {
                     SortFilterRow(
-                        currentSort = uiState.currentSortType,
-                        isPersonalized = uiState.isPersonalized,
+                        currentSort = currentSort,
+                        isPersonalized = isPersonalized,
                         onSortChanged = { sortType ->
-                            viewModel.loadPostsForSort(sortType)
+                            onSortChanged(sortType)
                         }
                     )
                 }
@@ -151,7 +163,7 @@ fun SubredditPostsSection(
                                 )
                             },
                             onVote = { postId, direction ->
-                                viewModel.voteOnPost(postId, direction)
+                                onVote(postId, direction)
                             },
                             onMenuClick = { clickedPost ->
                                 selectedPost = clickedPost
@@ -190,20 +202,20 @@ fun SubredditPostsSection(
                         )
                     }
 
-                    if (uiState.isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                LoadingIndicator(
-                                    color = RedditOrange
-                                )
-                            }
-                        }
-                    }
+//                    if (uiState.isLoadingMore) {
+//                        item {
+//                            Box(
+//                                modifier = Modifier
+//                                    .fillMaxWidth()
+//                                    .padding(16.dp),
+//                                contentAlignment = Alignment.Center
+//                            ) {
+//                                LoadingIndicator(
+//                                    color = RedditOrange
+//                                )
+//                            }
+//                        }
+//                    }
                 } else {
                     when (postsState) {
                         is PostsState.Error -> {
@@ -211,8 +223,14 @@ fun SubredditPostsSection(
                             item {
                                 ErrorMessage(
                                     error = errorState.message,
-                                    onRetry = { viewModel.loadPosts(LoadType.MORE) },
-                                    onDismiss = { viewModel.clearError() }
+                                    onRetry = {
+                                        TODO("error on retry")
+//                                        viewModel.loadPosts(LoadType.MORE)
+                                    },
+                                    onDismiss = {
+                                        TODO("error on dismiss")
+//                                        viewModel.clearError()
+                                    }
                                 )
                             }
                         }
@@ -271,24 +289,6 @@ fun SubredditPostsSection(
     }
 }
 
-@Composable
-fun PostsList(
-    isRefreshing: Boolean,
-    onRefresh: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    val pullToRefreshState = rememberPullToRefreshState()
-
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
-        state = pullToRefreshState,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        content()
-    }
-}
-
 @Preview(
     showBackground = true
 )
@@ -298,5 +298,11 @@ private fun PreviewSubredditPostsSection() {
         isRefreshing = false,
         onSortClick = {},
         onRefresh = {},
+        postsState = PostsState.Success.mock,
+        blurNsfw = false,
+        currentSort = SortType.HOT,
+        isPersonalized = true,
+        onSortChanged = {},
+        onVote = { id, direction -> },
     )
 }

@@ -5,6 +5,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -73,10 +75,16 @@ class SubredditDetailActivity : ComponentActivity() {
                     },
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    SubredditDetailScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        viewModel = viewModel
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .consumeWindowInsets(innerPadding)
+//                            .padding(innerPadding)
+                    ) {
+                        SubredditDetailScreen(
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }

@@ -57,6 +57,7 @@ import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.model.SubredditAboutData
 import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.PostsState
+import com.hamburghini.cosmos.data.repository.SortType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,20 +67,15 @@ fun SubredditDetailScreen(
 ) {
 
     val postsState by viewModel.postsState.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
     val blurNsfw by viewModel.blurNsfw.collectAsStateWithLifecycle()
-
-    var selectedPost by remember { mutableStateOf<Post?>(null) }
-    var showPostMenu by remember { mutableStateOf(false) }
 
     SubredditDetailContent(
         subreddit = SubredditAboutData.mock,
         postsState = postsState,
+        blurNsfw = blurNsfw,
         onRefresh = {
             viewModel.loadPosts(LoadType.REFRESH)
         },
-        modifier = modifier
     )
 }
 
@@ -88,6 +84,7 @@ fun SubredditDetailScreen(
 fun SubredditDetailContent(
     subreddit: SubredditAboutData,
     postsState: PostsState,
+    blurNsfw: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -95,9 +92,8 @@ fun SubredditDetailContent(
     val tabs = SubredditDetailTabs.entries
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-//            .navigationBarsPadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
 
@@ -230,6 +226,13 @@ fun SubredditDetailContent(
                     isRefreshing = false,
                     onSortClick = {},
                     onRefresh = onRefresh,
+                    blurNsfw = blurNsfw,
+                    currentSort = SortType.HOT,
+                    isPersonalized = true,
+                    onSortChanged = {},
+                    onVote = { postId, direction ->
+                        
+                    },
                 )
             } else if (selectedTab == 1) {
                 SubredditAboutSection(subreddit = subreddit)
@@ -253,6 +256,13 @@ fun SubredditDetailContent(
 @Composable
 private fun PreviewSubredditDetailScreen() {
     SubredditDetailContent(
-        subreddit = SubredditAboutData.mock
+        subreddit = SubredditAboutData.mock,
+        postsState = PostsState.Success(
+            posts = mapOf(Pair("id", Post.mock)),
+            sortType = SortType.HOT,
+            currentAfter = null
+        ),
+        onRefresh = {},
+        blurNsfw = false,
     )
 }

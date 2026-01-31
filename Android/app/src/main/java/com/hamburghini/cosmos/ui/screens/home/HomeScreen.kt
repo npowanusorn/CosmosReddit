@@ -70,6 +70,7 @@ import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.SortType
 import com.hamburghini.cosmos.ui.activity.SubredditDetailActivity
+import com.hamburghini.cosmos.ui.components.ErrorMessage
 import com.hamburghini.cosmos.ui.components.SortFilterRow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -400,51 +401,4 @@ fun HomeScreen(
         )
     }
 
-}
-
-@Composable
-private fun ErrorMessage(
-    error: String,
-    onRetry: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = "Oops! Something went wrong",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = error,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedButton(
-                onClick = onRetry,
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 4.dp)
-                )
-                Text("Retry")
-            }
-        }
-    }
 }

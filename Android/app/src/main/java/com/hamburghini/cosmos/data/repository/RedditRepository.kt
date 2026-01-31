@@ -573,7 +573,15 @@ sealed interface PostsState {
         val posts: Map<String, Post>,
         val sortType: SortType,
         val currentAfter: String?
-    ) : PostsState
+    ) : PostsState {
+        companion object {
+            val mock = Success(
+                posts = mapOf(Pair("id", Post.mock)),
+                sortType = SortType.HOT,
+                currentAfter = null
+            )
+        }
+    }
     data class Error(
         val message: String,
         val previous: Success? = null
