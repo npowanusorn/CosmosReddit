@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.data.manager.ProfileManager
+import com.hamburghini.cosmos.data.model.SubredditAboutData
 import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.RedditRepository
 import com.hamburghini.cosmos.data.repository.SettingsRepository
@@ -26,6 +27,9 @@ class SubredditDetailViewModel @Inject constructor(
     private val _subredditName = MutableStateFlow<String?>(null)
     val subredditName = _subredditName.asStateFlow()
 
+    private val _subredditAbout = MutableStateFlow<SubredditAboutData?>(null)
+    val subredditAbout = _subredditAbout.asStateFlow()
+
     val postsState = repository.postsState
     val blurNsfw = settingsRepository.blurNsfwFlow
         .onEach { isEnabled ->
@@ -41,6 +45,11 @@ class SubredditDetailViewModel @Inject constructor(
         _subredditName.value = name
         viewModelScope.launch {
             repository.getHotPosts(LoadType.INITIAL, name)
+            val response = repository.getSubredditAbout(name)
+            if (response.isSuccessful) {
+                Logger.d("data: ${response.body()?.data}")
+                _subredditAbout.value = response.body()?.data
+            }
         }
     }
 

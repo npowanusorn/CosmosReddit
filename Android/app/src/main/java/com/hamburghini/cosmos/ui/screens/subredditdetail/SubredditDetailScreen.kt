@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -43,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hamburghini.cosmos.R
+import com.hamburghini.cosmos.core.util.PostUtils
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.model.SubredditAboutData
 import com.hamburghini.cosmos.data.repository.LoadType
@@ -51,7 +54,7 @@ import com.hamburghini.cosmos.data.repository.SortType
 import kotlin.math.max
 import kotlin.math.min
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SubredditDetailScreen(
     modifier: Modifier = Modifier,
@@ -59,18 +62,28 @@ fun SubredditDetailScreen(
     onScrollProgressChanged: (Float) -> Unit = {}
 ) {
     val postsState by viewModel.postsState.collectAsState()
+    val subredditAbout by viewModel.subredditAbout.collectAsState()
     val blurNsfw by viewModel.blurNsfw.collectAsStateWithLifecycle()
 
-    SubredditDetailContent(
-        subreddit = SubredditAboutData.mock,
-        postsState = postsState,
-        blurNsfw = blurNsfw,
-        onRefresh = {
-            viewModel.loadPosts(LoadType.REFRESH)
-        },
-        onScrollProgressChanged = onScrollProgressChanged,
-        modifier = modifier
-    )
+    if (subredditAbout != null) {
+        SubredditDetailContent(
+            subreddit = subredditAbout!!,
+            postsState = postsState,
+            blurNsfw = blurNsfw,
+            onRefresh = {
+                viewModel.loadPosts(LoadType.REFRESH)
+            },
+            onScrollProgressChanged = onScrollProgressChanged,
+            modifier = modifier
+        )
+    } else {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            LoadingIndicator()
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -247,7 +260,7 @@ private fun CollapsibleHeader(
 
             Row {
                 Text(
-                    text = "${subreddit.accountsActive}",
+                    text = PostUtils.formatScore(subreddit.subscribers),
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )

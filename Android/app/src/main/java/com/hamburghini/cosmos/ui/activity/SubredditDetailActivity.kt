@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -88,6 +90,19 @@ class SubredditDetailActivity : ComponentActivity() {
                                     )
                                 }
                             },
+                            actions = {
+                                IconButton(onClick = { Logger.d("sort click") }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                                        contentDescription = null,
+                                        tint = if (scrollProgress > 0.5f) {
+                                            MaterialTheme.colorScheme.onSurface
+                                        } else {
+                                            Color.White
+                                        }
+                                    )
+                                }
+                            },
                             colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = lerp(
                                     Color.Transparent,
@@ -107,7 +122,6 @@ class SubredditDetailActivity : ComponentActivity() {
                         SubredditDetailScreen(
                             viewModel = viewModel,
                             onScrollProgressChanged = { progress ->
-                                Logger.d("onScrollProgressChanged: $progress")
                                 scrollProgress = progress
                             }
                         )
