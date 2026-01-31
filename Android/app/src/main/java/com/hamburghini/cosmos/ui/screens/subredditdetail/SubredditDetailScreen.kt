@@ -174,8 +174,6 @@ private fun CollapsibleHeader(
     collapseProgress: Float,
     modifier: Modifier = Modifier
 ) {
-    val alpha = 1f - collapseProgress
-    val scale = max(0.8f, 1f - (collapseProgress * 0.2f))
 
     Box(modifier = modifier.fillMaxWidth()) {
         // Background Image
@@ -185,14 +183,12 @@ private fun CollapsibleHeader(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .matchParentSize()
-                .alpha(alpha)
         )
 
         // Gradient Overlay
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .alpha(alpha)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -208,7 +204,6 @@ private fun CollapsibleHeader(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(16.dp)
-                .alpha(alpha)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
@@ -216,7 +211,7 @@ private fun CollapsibleHeader(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size((64 * scale).dp)
+                        .size(64.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
