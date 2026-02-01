@@ -120,9 +120,9 @@ fun SubredditPostsSection(
                 }
 
                 val content: PostsState? = when (postsState) {
-                    is PostsState.Error -> (postsState as PostsState.Error).previous
-                    is PostsState.LoadingMore -> (postsState as PostsState.LoadingMore).previous
-                    is PostsState.Refresh -> (postsState as PostsState.Refresh).previous
+                    is PostsState.Error -> postsState.previous
+                    is PostsState.LoadingMore -> postsState.previous
+                    is PostsState.Refresh -> postsState.previous
                     is PostsState.Success -> postsState
                     else -> null
                 }
@@ -186,10 +186,9 @@ fun SubredditPostsSection(
                 } else {
                     when (postsState) {
                         is PostsState.Error -> {
-                            val errorState = postsState as PostsState.Error
                             item {
                                 ErrorMessage(
-                                    error = errorState.message,
+                                    error = postsState.message,
                                     onRetry = {
                                         // TODO: error on retry
                                     },
@@ -278,9 +277,9 @@ fun SubredditPostsSectionContent(
         )
 
         val content: PostsState? = when (postsState) {
-            is PostsState.Error -> (postsState as PostsState.Error).previous
-            is PostsState.LoadingMore -> (postsState as PostsState.LoadingMore).previous
-            is PostsState.Refresh -> (postsState as PostsState.Refresh).previous
+            is PostsState.Error -> postsState.previous
+            is PostsState.LoadingMore -> postsState.previous
+            is PostsState.Refresh -> postsState.previous
             is PostsState.Success -> postsState
             else -> null
         }
@@ -313,9 +312,9 @@ fun SubredditPostsSectionContent(
                     onVideoClick = {
                         val videoUrl = post.preview?.videoPreview?.dashUrl
                         val aspectRatio = post.preview?.videoPreview?.let { preview ->
-                            val width = preview.width?.toFloat()
-                            val height = preview.height?.toFloat()
-                            if (width != null && height != null && height != 0F) width / height else null
+                            val width = preview.width.toFloat()
+                            val height = preview.height.toFloat()
+                            if (height != 0F) width / height else null
                         }
                         if (!videoUrl.isNullOrEmpty()) {
                             context.startActivity(
@@ -332,7 +331,7 @@ fun SubredditPostsSectionContent(
             when (postsState) {
                 is PostsState.Error -> {
                     ErrorMessage(
-                        error = (postsState as PostsState.Error).message,
+                        error = postsState.message,
                         onRetry = { },
                         onDismiss = { }
                     )

@@ -148,7 +148,7 @@ fun SubredditDetailContent(
         ) {
             // Header Banner
             item {
-                CollapsibleHeader(
+                SubredditHeader(
                     subreddit = subreddit,
                     selectedTab = selectedTab,
                     tabs = tabs.toList(),
@@ -177,7 +177,7 @@ fun SubredditDetailContent(
 }
 
 @Composable
-private fun CollapsibleHeader(
+private fun SubredditHeader(
     subreddit: SubredditAboutData,
     selectedTab: Int,
     tabs: List<SubredditDetailTabs>,
