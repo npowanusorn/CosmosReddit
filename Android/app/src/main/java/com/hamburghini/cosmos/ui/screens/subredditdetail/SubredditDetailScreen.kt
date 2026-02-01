@@ -13,15 +13,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,9 +36,9 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -44,15 +50,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.hamburghini.cosmos.R
+import com.hamburghini.cosmos.core.util.Logger
 import com.hamburghini.cosmos.core.util.PostUtils
+import com.hamburghini.cosmos.core.util.SubredditUtils
 import com.hamburghini.cosmos.data.model.Post
 import com.hamburghini.cosmos.data.model.SubredditAboutData
 import com.hamburghini.cosmos.data.repository.LoadType
 import com.hamburghini.cosmos.data.repository.PostsState
 import com.hamburghini.cosmos.data.repository.SortType
-import kotlin.math.max
-import kotlin.math.min
+import com.hamburghini.cosmos.ui.theme.RedditOrange
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -94,15 +102,15 @@ fun SubredditDetailContent(
     blurNsfw: Boolean,
     onRefresh: () -> Unit,
     onScrollProgressChanged: (Float) -> Unit = {},
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
-    val selectedTab = remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = SubredditDetailTabs.entries
     val listState = rememberLazyListState()
     val density = LocalDensity.current
 
     // Calculate header collapse progress
-    val headerHeight = 250.dp
+    val headerHeight = 350.dp
     val headerHeightPx = with(density) { headerHeight.toPx() }
 
     val collapseProgress = remember {
@@ -142,31 +150,18 @@ fun SubredditDetailContent(
             item {
                 CollapsibleHeader(
                     subreddit = subreddit,
-                    collapseProgress = collapseProgress.value,
+                    selectedTab = selectedTab,
+                    tabs = tabs.toList(),
+                    onTabSelected = { newTab ->
+                        selectedTab = newTab
+                    },
                     modifier = Modifier.height(headerHeight)
                 )
             }
 
-            // Tab Row
-            item {
-                PrimaryTabRow(
-                    selectedTabIndex = selectedTab.intValue,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = Color(0xFFFF4500)
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        Tab(
-                            selected = selectedTab.intValue == index,
-                            onClick = { selectedTab.intValue = index },
-                            text = { Text(tab.title) }
-                        )
-                    }
-                }
-            }
-
             // Tab Content
             item {
-                when (selectedTab.intValue) {
+                when (selectedTab) {
                     0 -> SubredditPostsSectionContent(
                         postsState = postsState,
                         blurNsfw = blurNsfw,
@@ -184,21 +179,26 @@ fun SubredditDetailContent(
 @Composable
 private fun CollapsibleHeader(
     subreddit: SubredditAboutData,
-    collapseProgress: Float,
+    selectedTab: Int,
+    tabs: List<SubredditDetailTabs>,
+    onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tabRowHeight = 48.dp
 
-    Box(modifier = modifier.fillMaxWidth()) {
-        // Background Image
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_background),
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
+        // Background image
+        AsyncImage(
+            model = SubredditUtils.getBannerUrl(subreddit),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .matchParentSize()
+            modifier = Modifier.matchParentSize()
         )
 
-        // Gradient Overlay
+        // Gradient overlay
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -206,30 +206,31 @@ private fun CollapsibleHeader(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f)
+                            Color.Black.copy(alpha = 0.85f)
                         )
                     )
                 )
         )
 
-        // Content
+        // Header content (kept away from tabs at bottom)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = tabRowHeight + 12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_launcher_foreground),
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop
                 )
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(Modifier.width(16.dp))
 
                 Column {
                     Text(
@@ -246,41 +247,79 @@ private fun CollapsibleHeader(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
             Text(
-                text = subreddit.description ?: "",
+                text = subreddit.publicDescription.orEmpty(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.9f),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
-            Row {
-                Text(
-                    text = PostUtils.formatScore(subreddit.subscribers),
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = "members",
-                    color = Color.White.copy(alpha = 0.8f)
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Group,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = PostUtils.formatScore(subreddit.subscribers),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
 
-                Spacer(Modifier.width(24.dp))
+                Button(
+                    onClick = { Logger.d("join clicked") },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RedditOrange,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Join")
+                }
+            }
+        }
 
-                Text(
-                    text = "${subreddit.activeUserCount}",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
+        // Tabs inside the header at bottom
+        PrimaryTabRow(
+            selectedTabIndex = selectedTab,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color.Transparent,
+            contentColor = RedditOrange,
+            indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTab),
+                    width = 32.dp,
+                    color = RedditOrange
                 )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = "online",
-                    color = Color.White.copy(alpha = 0.8f)
+            }
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { onTabSelected(index) },
+                    text = {
+                        Text(
+                            text = tab.title,
+                            color = if (selectedTab == index) RedditOrange else Color.White
+                        )
+                    }
                 )
             }
         }
